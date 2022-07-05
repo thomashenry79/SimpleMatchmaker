@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <unistd.h>
+#include<sys/socket.h> 
 using namespace std::chrono;
 
 enum class PeerCommand : uint8_t
@@ -17,21 +18,20 @@ enum class PeerCommand : uint8_t
 int main(int argc, char** argv)
 {
     // general setting
-    if (argc != 4) {
-        printf("invalid command line parameters\n");
-        printf("usage: udt-test localPort remoteIP remotePort\n");
-        return 0;
-    }
+    // if (argc != 4) {
+    //     printf("invalid command line parameters\n");
+    //     printf("usage: udt-test localPort remoteIP remotePort\n");
+    //     return 0;
+    // }
 
-    // set ip address and port
-    
-    char local_port[32];
-    char remote_ip[32];
-    char remote_port[32];
+    // set ip address and port    
 
-    std::string local_port(argv[1]);
-    std::string remote_ip(argv[2]);
-    std::string remote_port(argv[3]);
+     std::string local_port(argv[1]);
+     std::string remote_ip(argv[2]);
+     std::string remote_port(argv[3]);
+    int socket_desc=0;
+	socket_desc = socket(AF_INET , SOCK_DGRAM, 0);
+    printf("socket_desc\n");
 
     // init
     // -- enet
@@ -47,29 +47,31 @@ int main(int argc, char** argv)
 
     // -- loc
     // Only allow incoming connections from the remote IP
-    enet_address_set_host_ip(&address, remote_ip);
-    address.port = atoi(local_port);
-    local = enet_host_create(&address, 2, 1, 0, 0);
-
+     enet_address_set_host_ip(&address, "0.0.0.0");
+ 
+    address.port = atoi(local_port.c_str());
+    local = enet_host_create(&address, 2, 0, 0, 0);
+perror("bind");
     if (local == NULL) {
         printf("An error occurred while trying to create an ENet local.\n");
         exit(EXIT_FAILURE);
     }
-    printf("created Host on port %d\n", atoi(local_port));
+    printf("created Host on port %d\n", atoi(local_port.c_str()));
 
     auto pingSendTime = std::chrono::high_resolution_clock::now();
 
     ENetPeer* otherPeer = nullptr;
     ENetPeer* connectedPeer = nullptr;
 
-    address.port = atoi(remote_port);
+   enet_address_set_host_ip(&address, remote_ip.c_str());
+    address.port = atoi(remote_port.c_str());
     otherPeer = enet_host_connect(local, &address, 2, 0);
 
     if (NULL == otherPeer) {
         printf("An error occurred while trying to create an ENet peer.\n");
         exit(EXIT_FAILURE);
     }
-    printf("try to connect to peer host on port %d\n", atoi(remote_port));
+    printf("try to connect to peer host on port %d\n", atoi(remote_port.c_str()));
 
     // loop
     bool loop = true;
