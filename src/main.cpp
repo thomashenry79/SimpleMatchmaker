@@ -1,8 +1,9 @@
 #include <stdio.h>
-#include <conio.h>
-#include "..\enet\include\enet\enet.h"
+#include <enet/enet.h>
 #include <stdint.h>
 #include <chrono>
+#include <string>
+#include <unistd.h>
 using namespace std::chrono;
 
 enum class PeerCommand : uint8_t
@@ -23,13 +24,14 @@ int main(int argc, char** argv)
     }
 
     // set ip address and port
+    
     char local_port[32];
     char remote_ip[32];
     char remote_port[32];
 
-    strcpy_s(local_port, argv[1]);
-    strcpy_s(remote_ip, argv[2]);
-    strcpy_s(remote_port, argv[3]);
+    std::string local_port(argv[1]);
+    std::string remote_ip(argv[2]);
+    std::string remote_port(argv[3]);
 
     // init
     // -- enet
@@ -76,7 +78,7 @@ int main(int argc, char** argv)
     int nPunches = 0;
 
     while (loop) {
-        Sleep(1);
+        sleep(1);
         loopCount++;
         while (enet_host_service(local, &event, 0) > 0)
         {
@@ -162,23 +164,23 @@ int main(int argc, char** argv)
 
         if (connectedPeer)
         {
-            // send packet
-            if (_kbhit()) {
-                if (_getch() == '1')
-                {
-                    auto command = PeerCommand::pc_Ping;
-                    ENetPacket* packetPing = enet_packet_create(&command, sizeof(PeerCommand), ENET_PACKET_FLAG_RELIABLE);
+            // // send packet
+            // if (_kbhit()) {
+            //     if (_getch() == '1')
+            //     {
+            //         auto command = PeerCommand::pc_Ping;
+            //         ENetPacket* packetPing = enet_packet_create(&command, sizeof(PeerCommand), ENET_PACKET_FLAG_RELIABLE);
 
-                    enet_peer_send(connectedPeer, 0, packetPing);
-                    pingSendTime = std::chrono::high_resolution_clock::now();
-                    printf("Sent ping\n");
-                }
-                else if (_getch() == 'q')
-                {
-                    enet_peer_disconnect(connectedPeer, 0);
-                    printf("q pressed, exit app\n");
-                }
-            }
+            //         enet_peer_send(connectedPeer, 0, packetPing);
+            //         pingSendTime = std::chrono::high_resolution_clock::now();
+            //         printf("Sent ping\n");
+            //     }
+            //     else if (_getch() == 'q')
+            //     {
+            //         enet_peer_disconnect(connectedPeer, 0);
+            //         printf("q pressed, exit app\n");
+            //     }
+            // }
         }
 
     }

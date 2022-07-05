@@ -45,7 +45,7 @@ CTestTestfile.cmake
 _deps
 
 Skip to content
-Search or jump to…
+Search or jump toï¿½
 Pull requests
 Issues
 Marketplace
@@ -471,7 +471,7 @@ out/
 # JetBrains Rider
 *.sln.iml
 Footer
-© 2022 GitHub, Inc.
+ï¿½ 2022 GitHub, Inc.
 Footer navigation
 Terms
 Privacy
@@ -485,3 +485,28 @@ Training
 Blog
 About
 You have no unread notifications
+build/.cmake/api/v1/query/client-vscode/query.json
+
+
+12 lines (10 sloc)  220 Bytes
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+.gitignore
+.vscode/settings.json
+.vscode/tasks.json
+build/.cmake/api/v1/reply/cache-v2-12f5f3cae6759e2627f5.json
+build/.cmake/api/v1/reply/codemodel-v2-49c1eb657a8865d170f2.json
+build/.cmake/api/v1/reply/index-2022-07-05T21-09-16-0939.json
+build/.cmake/api/v1/reply/target-enet-Debug-b8dd956d876a1a7fee61.json
+build/.cmake/api/v1/reply/target-SimpleMatchmaker-Debug-f80bc8a58b1adc94c790.json
