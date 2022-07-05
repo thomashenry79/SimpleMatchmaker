@@ -510,3 +510,7 @@ build/.cmake/api/v1/reply/codemodel-v2-49c1eb657a8865d170f2.json
 build/.cmake/api/v1/reply/index-2022-07-05T21-09-16-0939.json
 build/.cmake/api/v1/reply/target-enet-Debug-b8dd956d876a1a7fee61.json
 build/.cmake/api/v1/reply/target-SimpleMatchmaker-Debug-f80bc8a58b1adc94c790.json
+.vscode/launch.json
+build/SimpleMatchmaker
+build/.cmake/api/v1/reply/cache-v2-33bf7336adf2bfd38da9.json
+build/.cmake/api/v1/reply/index-2022-07-05T21-24-56-0551.json

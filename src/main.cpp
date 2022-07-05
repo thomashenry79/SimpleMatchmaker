@@ -74,7 +74,11 @@ int main(int argc, char** argv)
     int nPunches = 0;
 
     while (loop) {
+#ifdef WIN32
         Sleep(1);
+#else
+     usleep(1000);
+#endif
         loopCount++;
         while (enet_host_service(local, &event, 0) > 0)
         {
