@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <chrono>
 #include <string>
-#include <unistd.h>
-#include<sys/socket.h> 
 using namespace std::chrono;
 
 enum class PeerCommand : uint8_t
@@ -29,9 +27,7 @@ int main(int argc, char** argv)
      std::string local_port(argv[1]);
      std::string remote_ip(argv[2]);
      std::string remote_port(argv[3]);
-    int socket_desc=0;
-	socket_desc = socket(AF_INET , SOCK_DGRAM, 0);
-    printf("socket_desc\n");
+
 
     // init
     // -- enet
@@ -46,12 +42,10 @@ int main(int argc, char** argv)
     ENetEvent event;
 
     // -- loc
-    // Only allow incoming connections from the remote IP
-     enet_address_set_host_ip(&address, "0.0.0.0");
- 
+    
+    address.host = ENET_HOST_ANY;
     address.port = atoi(local_port.c_str());
     local = enet_host_create(&address, 2, 0, 0, 0);
-perror("bind");
     if (local == NULL) {
         printf("An error occurred while trying to create an ENet local.\n");
         exit(EXIT_FAILURE);
@@ -63,7 +57,7 @@ perror("bind");
     ENetPeer* otherPeer = nullptr;
     ENetPeer* connectedPeer = nullptr;
 
-   enet_address_set_host_ip(&address, remote_ip.c_str());
+    enet_address_set_host_ip(&address, remote_ip.c_str());
     address.port = atoi(remote_port.c_str());
     otherPeer = enet_host_connect(local, &address, 2, 0);
 
@@ -80,7 +74,7 @@ perror("bind");
     int nPunches = 0;
 
     while (loop) {
-        sleep(1);
+        Sleep(1);
         loopCount++;
         while (enet_host_service(local, &event, 0) > 0)
         {
