@@ -37,8 +37,10 @@ int main(int argc, char** argv)
     // -- loc
 
   
-
-    local = enet_host_create(NULL, 1, 0, 0, 0);
+    /*enet_address_set_host_ip(&address, "127.0.0.1");*/
+    address.host = 0;
+    address.port = atoi(local_port.c_str());
+    local = enet_host_create(&address, 1, 0, 0, 0);
     if (local == NULL) {
         printf("An error occurred while trying to create an ENet local.\n");
         exit(EXIT_FAILURE);
@@ -69,7 +71,7 @@ int main(int argc, char** argv)
                 printf("We connected to %s:%u\n",
                     fromIP,
                     event.peer->address.port);
-                std::string message = "LOGIN:thd79";
+                std::string message = "LOGIN:" + name;
                 ENetPacket* packetPong = enet_packet_create(message.c_str(), message.length(), ENET_PACKET_FLAG_RELIABLE);
                 enet_peer_send(server, 0, packetPong);
                 break;

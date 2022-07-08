@@ -20,7 +20,11 @@ void User::SendInfoMessage(const char* msg) const
 bool User::TrySetName(std::string name)
 {
     if (!m_connections->VerifyName(name))
+    {
+        DisconnectUser("Username already in use");
         return false;
+    }
+
     SendInfoMessage("User logged in ok");
     m_name = name;
     return true;
