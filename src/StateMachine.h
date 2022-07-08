@@ -1,3 +1,4 @@
+#pragma once
 #include <variant>
 #include  <utility>
 #include <string>
@@ -38,6 +39,14 @@ public:
 		std::visit(passEventToState, m_state);
 	}
 
+	template <class Owner>
+	void SetOwner(Owner* owner) 
+	{
+		std::visit(
+			[&](auto& state) {state.m_user = owner; },
+			m_state
+		);
+	}
 private:
 	std::variant<States...> m_state;
 };

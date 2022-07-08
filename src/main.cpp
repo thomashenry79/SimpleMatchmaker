@@ -6,124 +6,25 @@
 #include <map>
 #include <vector>
 #include "StateMachine.h"
-using namespace std::chrono;
-
-enum class UserState
-{
-    AwaitingVerificatonState, LoggedInState, OpenedGameState, JoinedOpenGame
-};
-
-struct AwaitingVerificatonState
-{
-    void ReceiveMessage(const std::string& msg)
-    {
-        msg;
-    }
-};
-
-struct LoggedInState
-{
-    void ReceiveMessage(const std::string& msg)
-    {
-        msg;
-    }
-};
-struct OpenedGameState
-{
-    void ReceiveMessage(const std::string& msg)
-    {
-        msg;
-    }
-};
-
-struct JoinedOpenGame
-{
-    void ReceiveMessage(const std::string& msg)
-    {
-        msg;
-    }
-};
-
-enum MessageType
-{
-    Login,
-    Max
-};
-
-const char* MessagePrefixes[MessageType::Max] = { "LOGIN:" };
+#include "Message.h"
+#include "Connections.h"
+#include "Sender.h"
+#include <iostream>
 
 
 
-class User
-{
-    
-public:
-    User(ENetPeer* peer) : m_peer(peer) {};
-    void OnMessage(const std::string& msg) { 
-        m_fsm.ReceiveMessage(msg);
-    }
-    const std::string& Name() const { return m_name; }
-private:
-    ENetPeer* m_peer;
-    std::string m_name;
-    UserState m_state = UserState::AwaitingVerificatonState;
-    StateMachine< AwaitingVerificatonState, LoggedInState, OpenedGameState, JoinedOpenGame> m_fsm;
-};
-
-
-//class OpenGame
-//{
-//    User owner;
-//    std::vector<User> others;
-//};
-
-class Connections
-{
-public:
-    void NewConnection(ENetPeer* peer) 
-    {
-        if (users.count(peer))
-            throw "Peer already in connected list";
-        else
-        {
-            users.insert({ peer, User(peer) });
-        }
-    }
-
-    void LostConnection(ENetPeer* peer)
-    {
-        if (users.count(peer))
-            users.erase(peer);
-        else
-        {
-            throw "unknown peer";
-        }
-    }
-
-    void ReceiveMessage(ENetPeer* peer, const std::string& message)
-    {
-        if (users.count(peer))
-            users.at(peer).OnMessage(message);
-        else
-        {
-            throw "unknown peer";
-        }
-    }
-
-    std::map<ENetPeer*, User> users;
-};
 int main(int argc, char** argv)
 {
-    // general setting
-     if (argc != 4) {
-         printf("invalid command line parameters\n");
-         printf("usage: SimpleMatchmakerServer localPort\n");
-         return 0;
-     }
+    //// general setting
+    // if (argc != 2) {
+    //     printf("invalid command line parameters\n");
+    //     printf("usage: SimpleMatchmakerServer localPort\n");
+    //     return 0;
+    // }
      Connections connections;
     // set ip address and port    
 
-     std::string local_port(argv[1]);
+     //std::string local_port(argv[1]);
 
     // init
     // -- enet
@@ -140,7 +41,7 @@ int main(int argc, char** argv)
     // -- loc
     
     address.host = ENET_HOST_ANY;
-    address.port = atoi(local_port.c_str());
+    address.port = 19604;// atoi(local_port.c_str());
     local = enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0);
     if (local == NULL) {
         printf("An error occurred while trying to create an ENet local.\n");
@@ -157,6 +58,7 @@ int main(int argc, char** argv)
     while (loop) {
 
         loopCount++;
+        connections.Update();
         while (enet_host_service(local, &event, 1) > 0)
         {
             char fromIP[40];
@@ -164,44 +66,31 @@ int main(int argc, char** argv)
 
             switch (event.type) {
             case ENET_EVENT_TYPE_CONNECT:
-            {
-                connections.NewConnection(event.peer);
+            {                
                 printf("We accepted a connection from %s:%u\n",
                     fromIP,
                     event.peer->address.port);
+                connections.NewConnection(event.peer);
                     
                 break;
             }
             case ENET_EVENT_TYPE_RECEIVE:
             {
-                std::string message(event.packet->data, event.packet->data + event.packet->dataLength);
-                connections.ReceiveMessage(event.peer, message);
-                //auto pc = *((PeerCommand*)(event.packet->data));
-                //if (pc == PeerCommand::pc_Ping) {
-
-                //    printf("Received ping from %s:%d\n", ip, (int)event.peer->address.port);
-                //    auto command = PeerCommand::pc_Pong;
-                //   ENetPacket* packetPong = enet_packet_create(&command, sizeof(PeerCommand), ENET_PACKET_FLAG_RELIABLE);
-               //    enet_peer_send(event.peer, 0, packetPong);
-
-                //}
-                //else if (pc == PeerCommand::pc_Pong)
-                //{
-                //    auto now = std::chrono::high_resolution_clock::now();
-                //    auto msOfRoundTrip = (int)duration_cast<milliseconds>(now - pingSendTime).count();
-                //    printf("Received pong number %d from %s:%d, round trip time %dms\n", ++pongs, ip, (int)event.peer->address.port, msOfRoundTrip);
-                //}
-                //else if (pc == PeerCommand::pc_Punch) // Unexpected, punch messages should happen before the connection, in order to help establish it
-                //{
-                //    printf("Received punch from %s:%d\n", ip, (int)event.peer->address.port);
-
-                //}
+                printf("Message from %s:%u, msg is:",
+                    fromIP,
+                    event.peer->address.port);
+                std::string msg(event.packet->data, event.packet->data + event.packet->dataLength);
+                std::cout << msg << "\n";
+                connections.ReceiveMessage(event.peer, event.packet->data, event.packet->dataLength);                
                 enet_packet_destroy(event.packet);
 
                 break;
             }
             case ENET_EVENT_TYPE_DISCONNECT:
             {
+                printf("Disconnected from %s:%u\n",
+                    fromIP,
+                    event.peer->address.port);
                 connections.LostConnection(event.peer);
                 break;
             }

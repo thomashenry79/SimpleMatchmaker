@@ -15,11 +15,7 @@ target_link_libraries(SimpleMatchmakerServer enet)
 target_include_directories(SimpleMatchmakerServer PUBLIC "enet/include")
 
 target_link_libraries(Client enet)
-#target_link_libraries(Client fltk)
 target_include_directories(Client PUBLIC "enet/include")
-#target_include_directories(Client PUBLIC "fltk/")
-#target_include_directories(Client PUBLIC "fltk/FL")
-#target_include_directories(Client PUBLIC "${PROJECT_BINARY_DIR}/fltk")
 
 if(WIN32)
   target_link_libraries(SimpleMatchmakerServer Winmm ws2_32)
