@@ -499,7 +499,7 @@ build/.cmake/api/v1/query/client-vscode/query.json
 
 # Local History for Visual Studio Code
 .history/
-./build/
+.build/
 # Built Visual Studio Code Extensions
 *.vsix
 .gitignore
