@@ -8,6 +8,7 @@
 #include <iostream>
 #include "Message.h"
 #include "Sender.h"
+#include "Utils.h"
 void SendMessage(ENetPeer* to, const std::string& message)
 {
     enet_peer_send(
@@ -17,12 +18,7 @@ void SendMessage(ENetPeer* to, const std::string& message)
     );
 }
 
-std::string ToString(ENetAddress& addr)
-{
-    char fromIP[40];
-    enet_address_get_host_ip(&addr, fromIP, 40);
-    return std::string(fromIP) + ":" + std::to_string(addr.port);
-}
+
 bool operator==(const ENetAddress& lhs, const ENetAddress& rhs)
 {
     return lhs.host == rhs.host && lhs.port == rhs.port;
@@ -93,7 +89,7 @@ int main(int argc, char** argv)
             switch (event.type) {
             case ENET_EVENT_TYPE_CONNECT:
             {
-               std::cout << "We connected to someone: " << ToString(event.peer->address) <<"\n";
+               std::cout << "We connected to someone: " << ToReadableString(event.peer->address) <<"\n";
 
                 if (serverAddress == event.peer->address) {
                     printf("We connected to the server\n");
@@ -117,7 +113,7 @@ int main(int argc, char** argv)
                 if (msg.Type() == MessageType::Start)
                 {
                     gotPeerDetails = msg.TryParseIPAddress(peerAddress.host, peerAddress.port);
-                    std::cout << "IP of peer in message: " << ToString(peerAddress) << "\n";
+                    std::cout << "IP of peer in message: " << ToReadableString(peerAddress) << "\n";
                 }
                 enet_packet_destroy(event.packet);
 
