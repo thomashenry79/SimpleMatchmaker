@@ -42,19 +42,10 @@ std::string ToString(ENetAddress& addr)
 }
 bool Connections::VerifyName(const std::string& name)
 {
-    return std::count_if(users.begin(), users.end(), [&](auto& p) {
+    auto success = std::count_if(users.begin(), users.end(), [&](auto& p) {
         return p.second->Name() == name; }) == 0;
-
-    if (users.size() == 2)
-    {
-        auto& peer1 = (users.begin())->second;
-        auto& peer2 = (users.begin()++)->second;
-
-        Message::Make(MessageType::Start, ToString(peer1->Peer()->address)).OnData(Sender(peer2->Peer()));
-        Message::Make(MessageType::Start, ToString(peer2->Peer()->address)).OnData(Sender(peer1->Peer()));
-        peer1->DisconnectUser("Have fun, player1");
-        peer2->DisconnectUser("Have fun, player2");
-    }
+     
+    return success;
 }
 
 bool Connections::VerifyVersion(const std::string& version)
@@ -66,4 +57,16 @@ bool Connections::VerifyVersion(const std::string& version)
 void Connections::Update()
 {
 
+ if ( users.size() == 2)
+    {
+        auto& peer1 = (users.begin())->second;
+        auto& peer2 = (++users.begin())->second;
+        if(peer1->Name().length() && peer2->Name().length()){
+
+        Message::Make(MessageType::Start, ToString(peer1->Peer()->address)).OnData(Sender(peer2->Peer()));
+        Message::Make(MessageType::Start, ToString(peer2->Peer()->address)).OnData(Sender(peer1->Peer()));
+        peer1->DisconnectUser("Have fun, player1");
+        peer2->DisconnectUser("Have fun, player2");
+        }
+    }
 }
