@@ -499,7 +499,7 @@ build/.cmake/api/v1/query/client-vscode/query.json
 
 # Local History for Visual Studio Code
 .history/
-.build/
+build/
 # Built Visual Studio Code Extensions
 *.vsix
 .gitignore
@@ -521,3 +521,7 @@ build/.cmake/api/v1/reply/codemodel-v2-b9e4ed5b802b887cda70.json
 build/.cmake/api/v1/reply/index-2022-07-08T22-42-11-0173.json
 build/.cmake/api/v1/reply/target-Client-Debug-9c5984013907c98a3e35.json
 build/.cmake/api/v1/reply/target-SimpleMatchmakerServer-Debug-e7ee78843141a68cb3f4.json
+build/.cmake/api/v1/reply/codemodel-v2-9d3bc52b77c64c8d1f16.json
+build/.cmake/api/v1/reply/index-2022-07-09T14-46-32-0398.json
+build/.cmake/api/v1/reply/target-Client-Debug-845d0cc67c940c78d239.json
+build/.cmake/api/v1/reply/target-SimpleMatchmakerServer-Debug-edb899c6e6e2745b6bc1.json
