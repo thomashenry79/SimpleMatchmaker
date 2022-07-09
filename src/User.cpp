@@ -2,6 +2,14 @@
 #include "Message.h"
 #include "Connections.h"
 #include "Sender.h"
+
+User::User(ENetPeer* peer, Connections* connections) :
+    m_peer(peer),
+    m_connections(connections)
+{
+    ChangeState <WatingForVersionState>(this);
+}
+
 void User::DisconnectUser(std::string reason)
 {
     std::cout << "Kick user off: user " << reason << "\n";
@@ -9,14 +17,15 @@ void User::DisconnectUser(std::string reason)
     ChangeState<KickedOffState>();
     enet_peer_disconnect_later(m_peer, 0);
 }
-void User::OnMessage(const Message& msg) {
 
-      m_fsm.ReceiveMessage(msg);
+void User::OnMessage(const Message& msg) {
+    m_fsm.ReceiveMessage(msg);
 }
-void User::SendInfoMessage(const char* msg) const
-{
+
+void User::SendInfoMessage(const char* msg) const{
     Message::Make(MessageType::Info, msg).OnData(Sender(m_peer));
 }
+
 bool User::TrySetName(std::string name)
 {
     if (!m_connections->VerifyName(name))
@@ -29,20 +38,15 @@ bool User::TrySetName(std::string name)
     m_name = name;
     return true;
 }
-User::~User()
+
+bool User::TrySetVersion(std::string version)
 {
+    if (version.length() == 0)
+    {
+        DisconnectUser("Invalid version");
+        return false;
+    }
+
+    m_version = version;
+    return true;
 }
-//
-//User::User(const User&& other)
-//{
-//    *this = std::move(other);
-//}
-//User& User::operator=(const User&& other)
-//{
-//    m_peer = other.m_peer;
-//    m_connections = other.m_connections;
-//    m_name = other.m_name;
-//    m_fsm = other.m_fsm;
-//    m_fsm.SetOwner(this);
-//    return *this;
-//}

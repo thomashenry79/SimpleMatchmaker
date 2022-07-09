@@ -7,17 +7,21 @@ class Connections;
 // Zombie state - user has been kicked off, can no longer do anything
 struct KickedOffState
 {   
-    User* m_user = nullptr;
     void ReceiveMessage(const Message&)
     {
     }
 };
 
-
-struct AwaitingVerificatonState
+struct WatingForVersionState
 {
-    AwaitingVerificatonState(User* user) : m_user(user) {
-    }
+    WatingForVersionState(User* user) : m_user(user) {}
+    User* m_user;
+    void ReceiveMessage(const Message& msg);
+};
+
+struct WatingForLoginState
+{
+    WatingForLoginState(User* user) : m_user(user) {}
     User* m_user;
     void ReceiveMessage(const Message& msg);
 };

@@ -4,7 +4,18 @@
 #include "Connections.h"
 #include "Sender.h"
 #include <algorithm>
-void AwaitingVerificatonState::ReceiveMessage(const Message& msg)
+
+
+void WatingForVersionState::ReceiveMessage(const Message& msg)
+{
+    if (msg.Type() != MessageType::Version)
+        throw BadMessageException();
+
+    if (m_user->TrySetVersion(msg.Content()))
+        m_user->ChangeState<WatingForLoginState>(m_user);
+}
+
+void WatingForLoginState::ReceiveMessage(const Message& msg)
 {
     if (msg.Type() != MessageType::Login)
         throw BadMessageException();
@@ -15,9 +26,7 @@ void AwaitingVerificatonState::ReceiveMessage(const Message& msg)
     name.erase(std::remove(name.begin(), name.end(), ','), name.end());
 
     if (m_user->TrySetName(name))
-    {
         m_user->ChangeState<LoggedInState>(m_user);
-    }
 }
 
 void LoggedInState::ReceiveMessage(const Message& msg)

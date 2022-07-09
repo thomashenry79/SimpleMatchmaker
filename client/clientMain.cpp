@@ -8,19 +8,27 @@
 #include <iostream>
 
 
+void SendMessage(ENetPeer* to, const std::string& message)
+{
+    enet_peer_send(
+        to, 
+        0, 
+        enet_packet_create(message.c_str(), message.length(), ENET_PACKET_FLAG_RELIABLE)
+    );
+}
 
 int main(int argc, char** argv)
 {
     //// general setting
-    if (argc != 3) {
+    if (argc != 4) {
          printf("invalid command line parameters\n");
-         printf("usage: app localPort name\n");
+         printf("usage: app serverIP localPort name\n");
          return 0;
      }
     // set ip address and port    
-
-     std::string local_port(argv[1]);
-     std::string name(argv[2]);
+    std::string serverIP(argv[1]);
+     std::string local_port(argv[2]);
+     std::string name(argv[3]);
 
     // init
     // -- enet
@@ -46,7 +54,7 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
-    enet_address_set_host_ip(&address, "127.0.0.1");
+    enet_address_set_host_ip(&address, serverIP.c_str());
     address.port = 19604;// atoi(local_port.c_str());
     ENetPeer* server = enet_host_connect(local, &address, 0, 0);
 
@@ -71,9 +79,9 @@ int main(int argc, char** argv)
                 printf("We connected to %s:%u\n",
                     fromIP,
                     event.peer->address.port);
-                std::string message = "LOGIN:" + name;
-                ENetPacket* packetPong = enet_packet_create(message.c_str(), message.length(), ENET_PACKET_FLAG_RELIABLE);
-                enet_peer_send(server, 0, packetPong);
+                SendMessage(server, std::string("VERSION:0.01"));
+                SendMessage(server, std::string("LOGIN:") + name);
+               
                 break;
             }
             case ENET_EVENT_TYPE_RECEIVE:
