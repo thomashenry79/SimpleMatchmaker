@@ -2,6 +2,8 @@
 #include <functional>
 #include <string>
 #include <map>
+#include <tuple>
+#include <cstdint>
 enum class MessageType
 {
     Info,
@@ -25,6 +27,7 @@ public:
     MessageType Type() const;
     const char* Content() const;
     void ToConsole() const;
+    bool TryParseIPAddress(uint32_t& addr, uint16_t& port) const;
 private:
     Message(MessageType type, std::string data) : m_type(type), m_data(data) {};
     MessageType m_type;

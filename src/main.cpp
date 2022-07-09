@@ -21,10 +21,10 @@ int main(int argc, char** argv)
     //     printf("usage: SimpleMatchmakerServer localPort\n");
     //     return 0;
     // }
+     //std::string local_port(argv[1]);
      Connections connections;
     // set ip address and port    
 
-     //std::string local_port(argv[1]);
 
     // init
     // -- enet
