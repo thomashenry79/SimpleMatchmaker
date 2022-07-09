@@ -7,9 +7,7 @@ class Connections;
 // Zombie state - user has been kicked off, can no longer do anything
 struct KickedOffState
 {   
-    void ReceiveMessage(const Message&)
-    {
-    }
+    void ReceiveMessage(const Message&){}
 };
 
 struct WatingForVersionState

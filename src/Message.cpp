@@ -4,13 +4,17 @@
 const std::map< MessageType, std::string> Message::headers = std::map< MessageType, std::string>{
     {MessageType::Info,"INFO:" },
     {MessageType::Version, "VERSION:"},
-    {MessageType::Login,"LOGIN:" }
+    {MessageType::Login,"LOGIN:" },
+    {MessageType::Create,"CREATE:" },
+    {MessageType::Join,"JOIN:" },
+    {MessageType::Leave,"LEAVE:" },
+    {MessageType::Eject,"EJECT:" },
+    {MessageType::Start,"START:" }
 };
 
-void Message::OnData(std::function<void(const unsigned char*, size_t)> callback) const
+void Message::OnData(std::function<void(const std::string&)> callback) const
 {
-    auto ptr = (const unsigned char*)m_data.c_str();
-    callback(ptr, m_data.length());
+    callback(m_data);
 }
 
 Message Message::Make(MessageType type, std::string content)

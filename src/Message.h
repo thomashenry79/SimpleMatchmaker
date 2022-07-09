@@ -6,7 +6,12 @@ enum class MessageType
 {
     Info,
     Login,
-    Version
+    Version,
+    Create,
+    Join,
+    Leave,
+    Eject,
+    Start
 };
 
 class BadMessageException : public std::exception {};
@@ -14,7 +19,7 @@ class BadMessageException : public std::exception {};
 class Message
 {
 public:
-    void OnData(std::function<void(const unsigned char*, size_t)> callback) const;    
+    void OnData(std::function<void(const std::string&)> callback) const;    
     static Message Make(MessageType type, std::string content);
     static Message Parse(const unsigned char* data, size_t len);
     MessageType Type() const;
