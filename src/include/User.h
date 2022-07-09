@@ -16,11 +16,11 @@ public:
     User(ENetPeer* peer, Connections* connections);
 
 
-    void DisconnectUser(std::string reason);
+    void DisconnectUser(const std::string& reason);
     void OnMessage(const Message& msg);
-    void SendInfoMessage(const char* msg) const;
-    bool TrySetName(std::string name);
-    bool TrySetVersion(std::string name);
+    void SendInfoMessage(const std::string& msg) const;
+    bool TrySetName(const std::string& name);
+    bool TrySetVersion(const std::string& name);
     ENetPeer* Peer() { return m_peer; }
     const std::string& Name() const { return m_name; }
     const std::string& Version() const { return m_version; }

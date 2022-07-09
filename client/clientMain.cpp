@@ -17,6 +17,16 @@ void SendMessage(ENetPeer* to, const std::string& message)
     );
 }
 
+std::string ToString(ENetAddress& addr)
+{
+    char fromIP[40];
+    enet_address_get_host_ip(&addr, fromIP, 40);
+    return std::string(fromIP) + ":" + std::to_string(addr.port);
+}
+bool operator==(const ENetAddress& lhs, const ENetAddress& rhs)
+{
+    return lhs.host == rhs.host && lhs.port == rhs.port;
+}
 int main(int argc, char** argv)
 {
     //// general setting
@@ -37,25 +47,27 @@ int main(int argc, char** argv)
     }
 
     // -- vars
-    ENetAddress address;
+    
     ENetHost* local;
     ENetEvent event;
    
     // -- loc
 
-  
+    ENetAddress serverAddress;
+    ENetAddress peerAddress;
+    ENetAddress localAddress;
     /*enet_address_set_host_ip(&address, "127.0.0.1");*/
-    address.host = 0;
-    address.port = 0;
-    local = enet_host_create(&address, 1, 0, 0, 0);
+    localAddress.host = 0;
+    localAddress.port = 0;
+    local = enet_host_create(&localAddress, 1, 0, 0, 0);
     if (local == NULL) {
         printf("An error occurred while trying to create an ENet local.\n");
         exit(EXIT_FAILURE);
     }
 
-    enet_address_set_host_ip(&address, serverIP.c_str());
-    address.port = 19604;// atoi(local_port.c_str());
-    ENetPeer* server = enet_host_connect(local, &address, 0, 0);
+    enet_address_set_host_ip(&serverAddress, serverIP.c_str());
+    serverAddress.port = 19604;// atoi(local_port.c_str());
+    ENetPeer* server = enet_host_connect(local, &serverAddress, 0, 0);
     ENetPeer* peer = nullptr;
     // loop
     bool loop = true;
@@ -68,34 +80,31 @@ int main(int argc, char** argv)
     while (loop) {
 
         loopCount++;
-        if (gotPeerDetails && !connected)
+        if (gotPeerDetails && !connected && !peer)
         {
             // initiate conncetion to peer
-            peer = enet_host_connect(local, &address, 0, 0);
+            peer = enet_host_connect(local, &peerAddress, 0, 0);
             printf("Try to connect to peer\n");
         }
         while (enet_host_service(local, &event, 1) > 0)
         {
-            char fromIP[40];
-            enet_address_get_host_ip(&event.peer->address, fromIP, 40);
+            
 
             switch (event.type) {
             case ENET_EVENT_TYPE_CONNECT:
             {
-                if (server == event.peer) {
-                    printf("We connected to server %s:%u\n",
-                        fromIP,
-                        event.peer->address.port);
+               std::cout << "We connected to someone: " << ToString(event.peer->address) <<"\n";
+
+                if (serverAddress == event.peer->address) {
+                    printf("We connected to the server\n");
                     SendMessage(server, std::string("VERSION:0.01"));
                     SendMessage(server, std::string("LOGIN:") + name);
                 }
                 else
                 {
-                    printf("We connected to pper %s:%u\n",
-                        fromIP,
-                        event.peer->address.port);
+                    printf("We connected to a peer\n");
 
-                    Message::Make(MessageType::Info, "hello Dipshit").OnData(Sender(event.peer));
+                    Message::Make(MessageType::Info, "hello Dipshit my name is " + name).OnData(Sender(event.peer));
                 }
                 connected = true;
                 break;
@@ -107,7 +116,8 @@ int main(int argc, char** argv)
                 msg.ToConsole();
                 if (msg.Type() == MessageType::Start)
                 {
-                    gotPeerDetails = msg.TryParseIPAddress(address.host, address.port);
+                    gotPeerDetails = msg.TryParseIPAddress(peerAddress.host, peerAddress.port);
+                    std::cout << "IP of peer in message: " << ToString(peerAddress) << "\n";
                 }
                 enet_packet_destroy(event.packet);
 

@@ -2,6 +2,7 @@
 #include "User.h"
 #include "Message.h"
 #include "Sender.h"
+#include "Utils.h"
 #include <algorithm>
 #include <iostream>
 void Connections::NewConnection(ENetPeer* peer)
@@ -36,10 +37,8 @@ void Connections::ReceiveMessage(ENetPeer* peer, const unsigned char* data, size
 
 }
 
-std::string ToString(ENetAddress& addr)
-{
-    return std::to_string(addr.host) + ":" + std::to_string(addr.port);
-}
+
+
 bool Connections::VerifyName(const std::string& name)
 {
     auto success = std::count_if(users.begin(), users.end(), [&](auto& p) {
