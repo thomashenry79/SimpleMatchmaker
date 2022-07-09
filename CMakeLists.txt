@@ -13,6 +13,7 @@ add_executable(Client ${client_source_files})
 
 target_link_libraries(SimpleMatchmakerServer enet)
 target_include_directories(SimpleMatchmakerServer PUBLIC "enet/include")
+target_include_directories(SimpleMatchmakerServer PUBLIC "src/include")
 
 target_link_libraries(Client enet)
 target_include_directories(Client PUBLIC "enet/include")

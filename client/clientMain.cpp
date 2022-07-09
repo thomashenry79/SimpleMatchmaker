@@ -20,15 +20,14 @@ void SendMessage(ENetPeer* to, const std::string& message)
 int main(int argc, char** argv)
 {
     //// general setting
-    if (argc != 4) {
+    if (argc != 3) {
          printf("invalid command line parameters\n");
          printf("usage: app serverIP localPort name\n");
          return 0;
      }
     // set ip address and port    
     std::string serverIP(argv[1]);
-     std::string local_port(argv[2]);
-     std::string name(argv[3]);
+    std::string name(argv[2]);
 
     // init
     // -- enet
@@ -47,7 +46,7 @@ int main(int argc, char** argv)
   
     /*enet_address_set_host_ip(&address, "127.0.0.1");*/
     address.host = 0;
-    address.port = atoi(local_port.c_str());
+    address.port = 0;
     local = enet_host_create(&address, 1, 0, 0, 0);
     if (local == NULL) {
         printf("An error occurred while trying to create an ENet local.\n");
