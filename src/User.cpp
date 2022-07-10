@@ -35,7 +35,7 @@ bool User::TrySetName(const std::string& name)
         return false;
     }
 
-    SendInfoMessage("User logged in ok, your name is " + name + " and your external IP is " + ToString(m_peer->address));
+    SendInfoMessage("User logged in ok, your name is " + name + " and your external IP is " + ToReadableString(m_peer->address));
     m_name = name;
     return true;
 }

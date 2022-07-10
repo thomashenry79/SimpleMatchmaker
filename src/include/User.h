@@ -25,6 +25,11 @@ public:
     const std::string& Name() const { return m_name; }
     const std::string& Version() const { return m_version; }
 
+    template <class Visitor>
+    void Visit(Visitor& v) const
+    {
+        m_fsm.VisitState(v);
+    }
     template<typename State, typename... Args>
     void ChangeState(Args&&... args)
     {
