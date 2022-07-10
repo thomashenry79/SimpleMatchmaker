@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 
  
   //  local = enet_host_create(&localAddress, 2, 0, 0, 0);
-    LocalHostPtr local ( enet_host_create(&localAddress, 2, 0, 0, 0), enet_host_destroy) ;
+    LocalHostPtr local ( enet_host_create(&localAddress, 3, 0, 0, 0), enet_host_destroy) ;
 
     if (!local) {
         printf("An error occurred while trying to create an ENet local.\n");
@@ -114,21 +114,27 @@ int main(int argc, char** argv)
     int pongs = 0;
     int loopCount = 0;
     int nPunches = 0;
-    bool connected = false;
+    bool connectedToServer = false;
     bool gotPeerDetails = false;
     bool holePunching = false;
+    bool attemptConnection = false;
+
     std::string peerDetails;
     while (loop) {
 
         loopCount++;
-        if (peerAddresses.size() && !connected && peerCandidates.size()==0)
+        if (attemptConnection && !connectedToServer)
         {
             // initiate conncetion to peer
+            printf("Try to connect to peers: \n");
             for (auto& ad : peerAddresses)
+            {
                 peerCandidates.push_back(enet_host_connect(local.get(), &ad, 0, 0));
-
-            printf("Try to connect to peer\n");
+                std::cout << ToReadableString(ad) << "\n";
+            }
+            std::cout << "\n";
             holePunching = true;
+            attemptConnection = false;
         }
 
         if (holePunching && (loopCount % 100 == 0))
@@ -146,12 +152,12 @@ int main(int argc, char** argv)
 
                     if (peerConnections.size())
                     {
-                    std::cout << "Send INFO:Ping\n";
-                    SendMessage(peerConnections[0], "INFO:Ping");
+                      std::cout << "Send INFO:Ping\n";
+                     SendMessage(peerConnections[0], "INFO:Ping");
                     }
 
-                 }
-                if (_getch() == 'q')
+                }
+                else if (_getch() == 'q')
                 {
                     loop = false;
                 }
@@ -161,34 +167,43 @@ int main(int argc, char** argv)
             switch (event.type) {
             case ENET_EVENT_TYPE_CONNECT:
             {
-               
+                std::cout << "connect event, ip:  " << ToReadableString(event.peer->address) << "\n";
 
                 if (serverAddress == event.peer->address) {
                     printf("We connected to the server\n");
+                    connectedToServer = true;
                     SendMessage(server, std::string("VERSION:0.01"));
-                    SendMessage(server, std::string("LOGIN:") + ToString(localAddress) + ","+name);
+                    SendMessage(server, std::string("INFO:")+ToString(localAddress));
+                    SendMessage(server, std::string("LOGIN:")+name);
                 }
                 else if(contains(peerAddresses,event.peer->address) )
                 {
+                    std::cout << "Connected to a Peer \n";
+                 
                     peerConnections.push_back(event.peer);
                     if (peerConnections.size() == 1)
                     {
                         holePunching = false;
-                        printf("We connected to a peer, hole punched\n");
+                        printf("Hole punched, use this connection\n");
+                        if (contains(peerCandidates, event.peer)) {
+                            eraseAndRemove(peerCandidates, event.peer);
+                            std::cout << "Peer was in our candidate list: we connected to them\n";
+                        }
+                        else
+                            std::cout << "Peer was NOT in our candidate list: they connected to us\n";
 
                         Message::Make(MessageType::Info, "hello mate my name is " + name).OnData(Sender(event.peer));
                     }
                     else
                     {
-                        printf("We connected to a secondary peer\n");
+                        printf("Redundant connection established\n");
                     }
                 }
                 else
                 {
-                   // std::cout << "Connected to uneeded connection \n";
-                  //  enet_peer_disconnect(event.peer,0);
+                    std::cout << "Connected to unknown peer...... bin it\n";
+                    enet_peer_disconnect(event.peer,0);
                 }
-                connected = true;
                 break;
             }
             case ENET_EVENT_TYPE_RECEIVE:
@@ -205,6 +220,7 @@ int main(int argc, char** argv)
                     std::cout << "IPs of peers in message: ";
                     for(const auto& peerAddress : peerAddresses)
                         std::cout<< ToReadableString(peerAddress) << "\n"; 
+                    attemptConnection = true;
                 }
                 if (msg.Type() == MessageType::Info)
                 {
@@ -216,20 +232,24 @@ int main(int argc, char** argv)
             }
             case ENET_EVENT_TYPE_DISCONNECT:
             {
-                connected = false;
-                if(serverAddress == event.peer->address)
-                    std::cout << "We Disconnected from server: " << ToReadableString(event.peer->address) << "\n";
-                else if (contains(peerConnections,event.peer))
+                std::cout << "disconnect event ip " << ToReadableString(event.peer->address) << "\n";
+                if (serverAddress == event.peer->address)
                 {
-                   // if (actualPeer == event.peer)
-                    {
-                    //    actualPeer = 0;
+                    std::cout << "We Disconnected from server: " << ToReadableString(event.peer->address) << "\n";
+                    connectedToServer = false;
+                }
+               else if (contains(peerConnections,event.peer))
+                {
+                    if(event.peer== peerConnections[0])
                         std::cout << "We Disconnected from peer: " << ToReadableString(event.peer->address) << "\n";
-                    }
-                   // else
-                    {
-                     ///   std::cout << "Drop unused connection\n";
-                    }
+                    else
+                        std::cout << "We Disconnected from redundant connection: " << ToReadableString(event.peer->address) << "\n";
+                    eraseAndRemove(peerConnections, event.peer);
+                }
+                else if (contains(peerCandidates, event.peer))
+                {
+                      std::cout << "Abort connection attempt to " << ToReadableString(event.peer->address) << "\n";
+                      eraseAndRemove(peerCandidates, event.peer);
                 }
                 else
                 {

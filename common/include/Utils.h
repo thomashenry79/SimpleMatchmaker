@@ -14,7 +14,7 @@ bool contains(const std::vector<T>& v, const T& elem)
 
 
 template<class T>
-bool eraseAndRemove(std::vector<T>& vev, const T& elem)
+void eraseAndRemove(std::vector<T>& vec, const T& elem)
 {
 	vec.erase(std::remove(vec.begin(), vec.end(), elem), vec.end());
 }
