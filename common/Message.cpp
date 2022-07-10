@@ -68,7 +68,7 @@ bool Message::TryParseIPAddress(uint32_t& addr, uint16_t& port) const
 
     try
     {
-        addr = std::stoi(strings[0]);
+        addr = std::stoul(strings[0]);
         port = std::stoi(strings[1]);
         return true;
     }
