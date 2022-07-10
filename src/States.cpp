@@ -4,7 +4,7 @@
 #include "Connections.h"
 #include "Sender.h"
 #include <algorithm>
-
+#include "Utils.h"
 
 void WatingForVersionState::ReceiveMessage(const Message& msg)
 {
@@ -12,9 +12,16 @@ void WatingForVersionState::ReceiveMessage(const Message& msg)
         throw BadMessageException();
 
     if (m_user->TrySetVersion(msg.Content()))
+        m_user->ChangeState<WatingForLocalIPState>(m_user);
+}
+void WatingForLocalIPState::ReceiveMessage(const Message& msg)
+{
+    if (msg.Type() != MessageType::Info)
+        throw BadMessageException();
+
+    if(m_user->TrySetLocaIPAddress(msg.Content()))
         m_user->ChangeState<WatingForLoginState>(m_user);
 }
-
 void WatingForLoginState::ReceiveMessage(const Message& msg)
 {
     if (msg.Type() != MessageType::Login)

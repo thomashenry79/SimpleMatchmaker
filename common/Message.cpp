@@ -1,16 +1,7 @@
 #include "Message.h"
 #include <iostream>
-#include <sstream>
 
-std::vector<std::string> split(const std::string& text, char delim) {
-    std::string line;
-    std::vector<std::string> vec;
-    std::stringstream ss(text);
-    while (std::getline(ss, line, delim)) {
-        vec.push_back(line);
-    }
-    return vec;
-}
+
 
 
 const std::map< MessageType, std::string> Message::headers = std::map< MessageType, std::string>{
@@ -55,29 +46,29 @@ const char* Message::Content() const
 {
     return m_data.c_str() + headers.at(m_type).length();
 }
-
-bool Message::TryParseIPAddress(uint32_t& addr, uint16_t& port) const
-{
-    if (m_type != MessageType::Start)
-        return false;
-
-    auto strings = split(Content(), ':');
-
-    if (strings.size() != 2)
-        return false;
-
-    try
-    {
-        addr = std::stoul(strings[0]);
-        port = std::stoi(strings[1]);
-        return true;
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-}
+//
+//bool Message::TryParseIPAddress(uint32_t& addr, uint16_t& port) const
+//{
+//    if (m_type != MessageType::Start)
+//        return false;
+//
+//    auto strings = split(Content(), ':');
+//
+//    if (strings.size() != 2)
+//        return false;
+//
+//    try
+//    {
+//        addr = std::stoul(strings[0]);
+//        port = std::stoi(strings[1]);
+//        return true;
+//    }
+//    catch(...)
+//    {
+//        return false;
+//    }
+//
+//}
 
 void Message::ToConsole() const
 {

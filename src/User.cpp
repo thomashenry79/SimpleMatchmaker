@@ -35,9 +35,16 @@ bool User::TrySetName(const std::string& name)
         return false;
     }
 
-    SendInfoMessage("User logged in ok, your name is " + name + " and your external IP is " + ToReadableString(m_peer->address));
+    SendInfoMessage("User logged in ok, your name is " + name 
+        +  "\nyour external IP is " + ToReadableString(m_peer->address) 
+        + "\nyour local IP is " + ToReadableString(m_localIP) + "\n");
     m_name = name;
     return true;
+}
+
+bool User::TrySetLocaIPAddress(const std::string& data)
+{
+    return TryParseIPAddress(data, m_localIP);
 }
 
 bool User::TrySetVersion(const std::string& version)

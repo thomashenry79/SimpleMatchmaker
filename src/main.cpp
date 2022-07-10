@@ -15,19 +15,8 @@
 
 int main(int argc, char** argv)
 {
-    //// general setting
-    // if (argc != 2) {
-    //     printf("invalid command line parameters\n");
-    //     printf("usage: SimpleMatchmakerServer localPort\n");
-    //     return 0;
-    // }
-     //std::string local_port(argv[1]);
      Connections connections;
-    // set ip address and port    
 
-
-    // init
-    // -- enet
     if (enet_initialize() != 0) {
         fprintf(stderr, "An error occurred while initializing ENet.\n");
         return EXIT_FAILURE;
@@ -41,7 +30,6 @@ int main(int argc, char** argv)
     // -- loc
     
     address.host = ENET_HOST_ANY;
-    address.port = 19604;// atoi(local_port.c_str());
     local = enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0);
     if (local == NULL) {
         printf("An error occurred while trying to create an ENet local.\n");
@@ -51,13 +39,10 @@ int main(int argc, char** argv)
 
     // loop
     bool loop = true;
-    int pongs = 0;
-    int loopCount = 0;
-    int nPunches = 0;
+   
 
     while (loop) {
 
-        loopCount++;
         connections.Update();
         while (enet_host_service(local, &event, 1) > 0)
         {

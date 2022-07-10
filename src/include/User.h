@@ -21,7 +21,9 @@ public:
     void SendInfoMessage(const std::string& msg) const;
     bool TrySetName(const std::string& name);
     bool TrySetVersion(const std::string& name);
+    bool TrySetLocaIPAddress(const std::string& data);
     ENetPeer* Peer() { return m_peer; }
+    const ENetAddress& LocalIP() const { return m_localIP; }
     const std::string& Name() const { return m_name; }
     const std::string& Version() const { return m_version; }
 
@@ -36,13 +38,21 @@ public:
         std::cout << "User " << m_peer << " entered state " << typeid(State).name() <<"\n";
         m_fsm.ChangeState<State>(std::forward<Args>(args)...);
     }
-   
+    
 private:
+    ENetAddress m_localIP;
     Connections* m_connections;
     ENetPeer* m_peer;
     std::string m_name;
     std::string m_version;
-    StateMachine< KickedOffState, WatingForVersionState, WatingForLoginState, LoggedInState, OpenedGameState, JoinedOpenGame> m_fsm;
+    StateMachine< 
+        KickedOffState,
+        WatingForVersionState, 
+        WatingForLoginState, 
+        WatingForLocalIPState,
+        LoggedInState, 
+        OpenedGameState, 
+        JoinedOpenGame> m_fsm;
 
 private:
     // No copying or moving.

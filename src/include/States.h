@@ -24,6 +24,12 @@ struct WatingForLoginState
     void ReceiveMessage(const Message& msg);
 };
 
+struct WatingForLocalIPState
+{
+    WatingForLocalIPState(User* user) : m_user(user) {}
+    User* m_user;
+    void ReceiveMessage(const Message& msg);
+};
 struct LoggedInState
 {
     LoggedInState(User* user) : m_user(user) {}
