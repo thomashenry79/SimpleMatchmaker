@@ -1,20 +1,31 @@
 #pragma once
-#include <enet/enet.h>
-#include <map>
-#include <memory>
+#include "UserMap.h"
+#include "UserChangedStateVisitor.h"
 #include <string>
-#include "User.h"
+#include "Utils.h"
 class User;
 class Message;
+
+
 class Connections
 {
 public:
+    Connections(uint16_t port);
     void NewConnection(ENetPeer* peer);
     void LostConnection(ENetPeer* peer);
     void ReceiveMessage(ENetPeer* peer, const unsigned char* data, size_t len);
     void Update();
     bool VerifyName(const std::string& name);
     bool VerifyVersion(const std::string& version);
+    UserChangedStateVisitor& UserChangeStateHandler() { return visitor; }
+    ENetHost* Host() { return m_host.get(); }
+    void BroadcastMessage(const class Message& m) const;
+    void BroadcastActiveUsers() const;
 private:
-    std::map<ENetPeer*, std::unique_ptr<User>> users;
+
+    std::vector<User*> ActivePlayers() const;
+    ENetAddress address;
+    ENetHostPtr m_host;
+    UserMap users;
+    UserChangedStateVisitor visitor;   
 };

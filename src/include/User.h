@@ -37,6 +37,7 @@ public:
     {
         std::cout << "User " << m_peer << " entered state " << typeid(State).name() <<"\n";
         m_fsm.ChangeState<State>(std::forward<Args>(args)...);
+        m_fsm.VisitState(m_connections->UserChangeStateHandler());
     }
     
 private:

@@ -6,13 +6,18 @@
 #include "States.h"
 #include <algorithm>
 #include <iostream>
+#include "Sender.h"
 
-template <class Visitor>
-void VisitAllUsers(std::map<ENetPeer*, std::unique_ptr<User>>& users, Visitor& v)
-{
-    for (auto& pair : users)
-        pair.second->Visit(v);
+Connections::Connections(uint16_t port) : 
+    address{ ENET_HOST_ANY,port },
+    m_host(enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0), enet_host_destroy),
+    visitor(*this, m_host.get())
+{  
+    if (!m_host) {
+        throw "An error occurred while trying to create an ENet local.\n";
+    }
 }
+
 
 
 void Connections::NewConnection(ENetPeer* peer)
@@ -27,16 +32,12 @@ void Connections::LostConnection(ENetPeer* peer)
 {
     if (users.count(peer))
         users.erase(peer); 
+    BroadcastMessage(Message::Make(MessageType::Info, "Player disconnected"));
+    BroadcastActiveUsers();
     std::cout << "removed user " << users.size() << " connected\n";
 }
 
-class LoggedInUsersVisitor
-{
-public:    
-    std::vector<User*>users;
-    template <class T> void Visit(const T&){};
-    template <> void Visit(const LoggedInState& s){users.push_back(s.m_user);};
-};
+
 
 void Connections::ReceiveMessage(ENetPeer* peer, const unsigned char* data, size_t len)
 {
@@ -71,21 +72,59 @@ bool Connections::VerifyVersion(const std::string& version)
     return true;
 }
 
+class IsUserActive
+{
+    bool m_bActive;
+public:
+    bool operator()() const {return m_bActive; }
+    template <class T> void Visit(const T& s) { m_bActive = true; }
+    template <> void Visit(const WatingForLocalIPState& s) { m_bActive = false; };
+    template <> void Visit(const WatingForLoginState& s) { m_bActive = false; }
+    template <> void Visit(const WatingForVersionState& s) { m_bActive = false; }
+    template <> void Visit(const KickedOffState& s) { m_bActive = false; }
+};
+
+class ActiveUsersListMaker
+{
+public:
+    std::vector<User*> m_ActiveUsers;
+    template <class T> void Visit(const T& s) {
+        IsUserActive isActive;
+        isActive.Visit(s);
+        if(isActive())
+            m_ActiveUsers.push_back(s.m_user);
+    };
+};
+
+std::vector<User*> Connections::ActivePlayers() const
+{
+    ActiveUsersListMaker v;
+    return VisitMap(users, v).m_ActiveUsers;
+}
+
+std::vector<ENetPeer*> AsPeers(const std::vector<User*>& users)
+{
+    std::vector<ENetPeer*> peers(users.size());
+    std::transform(users.begin(), users.end(), peers.begin(), [](User* u) {return u->Peer(); });
+    return peers;
+}
+
+void Connections::BroadcastMessage(const Message& m) const
+{
+    auto activeUsers = AsPeers(ActivePlayers());
+    m.OnData(SendTo(activeUsers));
+}
+void Connections::BroadcastActiveUsers() const
+{
+    auto activeUsers = ActivePlayers();
+
+    std::string userList;
+    for (const auto& u : activeUsers)
+        userList += u->Name() + ",";
+
+    BroadcastMessage(Message::Make(MessageType::PlayersActive, userList));
+}
 void Connections::Update()
 {
-    LoggedInUsersVisitor loggedIn;
-    VisitAllUsers(users,loggedIn);
-
-    if ( loggedIn.users.size() == 2)
-    {
-        auto& peer1 = loggedIn.users[0];
-        auto& peer2 = loggedIn.users[1];
-        if(peer1->Name().length() && peer2->Name().length()){
-
-            Message::Make(MessageType::Start, ToString(peer1->Peer()->address)+","+ToString(peer1->LocalIP())).OnData(Sender(peer2->Peer()));
-            Message::Make(MessageType::Start, ToString(peer2->Peer()->address)+","+ToString(peer2->LocalIP())).OnData(Sender(peer1->Peer()));
-            peer1->DisconnectUser("Have fun, player1");
-            peer2->DisconnectUser("Have fun, player2");
-        }
-    }
+   
 }

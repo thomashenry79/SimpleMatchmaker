@@ -13,7 +13,9 @@ enum class MessageType
     Join,
     Leave,
     Eject,
-    Start
+    Start,
+    PlayersActive,
+    GamesOpen
 };
 
 class BadMessageException : public std::exception {};

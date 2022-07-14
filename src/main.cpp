@@ -10,82 +10,42 @@
 #include "Connections.h"
 #include "Sender.h"
 #include <iostream>
-
-
+#include "Utils.h"
 
 int main(int argc, char** argv)
 {
-     Connections connections;
-
-    if (enet_initialize() != 0) {
-        fprintf(stderr, "An error occurred while initializing ENet.\n");
-        return EXIT_FAILURE;
-    }
-
-    // -- vars
-    ENetAddress address;
-    ENetHost* local;
-    ENetEvent event;
-
-    // -- loc
-    
-    address.host = ENET_HOST_ANY;
-    local = enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0);
-    if (local == NULL) {
-        printf("An error occurred while trying to create an ENet local.\n");
-        exit(EXIT_FAILURE);
-    }
-
-
+    EnetInitialiser enetObj;
+    int port = 19601;
+    Connections connections(port);
     // loop
-    bool loop = true;
-   
-
+    bool loop = true; 
+    std::cout << "SimpleMatchmaking Server running on Port " << port << "\n";
     while (loop) {
-
+    ENetEvent event;
         connections.Update();
-        while (enet_host_service(local, &event, 1) > 0)
+        while (enet_host_service(connections.Host(), &event, 1) > 0)
         {
-            char fromIP[40];
-            enet_address_get_host_ip(&event.peer->address, fromIP, 40);
-
             switch (event.type) {
             case ENET_EVENT_TYPE_CONNECT:
-            {                
-                printf("We accepted a connection from %s:%u\n",
-                    fromIP,
-                    event.peer->address.port);
-                connections.NewConnection(event.peer);
-                    
+            { 
+                connections.NewConnection(event.peer);                    
                 break;
             }
             case ENET_EVENT_TYPE_RECEIVE:
             {
-                printf("Message from %s:%u, msg is:",
-                    fromIP,
-                    event.peer->address.port);
-                std::string msg(event.packet->data, event.packet->data + event.packet->dataLength);
-                std::cout << msg << "\n";
-                connections.ReceiveMessage(event.peer, event.packet->data, event.packet->dataLength);                
-                enet_packet_destroy(event.packet);
-
+                EnetPacketRAIIGuard guard(event.packet);                
+                connections.ReceiveMessage(event.peer, event.packet->data, event.packet->dataLength);  
                 break;
             }
             case ENET_EVENT_TYPE_DISCONNECT:
             {
-                printf("Disconnected from %s:%u\n",
-                    fromIP,
-                    event.peer->address.port);
                 connections.LostConnection(event.peer);
                 break;
             }
+            case ENET_EVENT_TYPE_NONE:
+                break;
             }
         }
-
-        
-
     }
 
-    enet_host_destroy(local);
-    enet_deinitialize();
 }

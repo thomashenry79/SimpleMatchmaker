@@ -4,15 +4,17 @@
 
 
 
-const std::map< MessageType, std::string> Message::headers = std::map< MessageType, std::string>{
+const  std::map< MessageType, std::string> Message::headers = std::map< MessageType, std::string>{
     {MessageType::Info,"INFO:" },
-    {MessageType::Version, "VERSION:"},
     {MessageType::Login,"LOGIN:" },
+    {MessageType::Version, "VERSION:"},   
     {MessageType::Create,"CREATE:" },
     {MessageType::Join,"JOIN:" },
     {MessageType::Leave,"LEAVE:" },
     {MessageType::Eject,"EJECT:" },
-    {MessageType::Start,"START:" }
+    {MessageType::Start,"START:" },
+    {MessageType::PlayersActive,"PLAYERSACTIVE:" },
+    {MessageType::GamesOpen,"GAMESOPEN:" },
 };
 
 void Message::OnData(std::function<void(const std::string&)> callback) const

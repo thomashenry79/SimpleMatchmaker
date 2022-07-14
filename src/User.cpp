@@ -24,7 +24,7 @@ void User::OnMessage(const Message& msg) {
 }
 
 void User::SendInfoMessage(const std::string& msg) const{
-    Message::Make(MessageType::Info, msg).OnData(Sender(m_peer));
+    Message::Make(MessageType::Info, msg).OnData(SendTo(m_peer));
 }
 
 bool User::TrySetName(const std::string& name)

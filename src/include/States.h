@@ -6,7 +6,8 @@ class Connections;
 
 // Zombie state - user has been kicked off, can no longer do anything
 struct KickedOffState
-{   
+{  
+    User* m_user=nullptr;
     void ReceiveMessage(const Message&){}
 };
 

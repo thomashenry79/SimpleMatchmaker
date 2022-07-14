@@ -9,16 +9,18 @@
 #include "Message.h"
 #include "Sender.h"
 #include "Utils.h"
-void SendMessage(ENetPeer* to, const std::string& message)
-{
-    enet_peer_send(
-        to, 
-        0, 
-        enet_packet_create(message.c_str(), message.length(), ENET_PACKET_FLAG_RELIABLE)
-    );
-}
 #include <ws2tcpip.h>
 #include <conio.h>
+
+//void SendMessage(ENetPeer* to, const std::string& message)
+//{
+//    enet_peer_send(
+//        to, 
+//        0, 
+//        enet_packet_create(message.c_str(), message.length(), ENET_PACKET_FLAG_RELIABLE)
+//    );
+//}
+
 uint32_t LocalIP() {
   char host[256];
     char* IP;
@@ -34,18 +36,11 @@ uint32_t LocalIP() {
    // printf("Internal IP: %s\n", IP);
     return addr.S_un.S_addr;
 }
-using LocalHostPtr = std::unique_ptr<ENetHost, void(*)(ENetHost*)>;
 bool operator==(const ENetAddress& lhs, const ENetAddress& rhs)
 {
     return lhs.host == rhs.host && lhs.port == rhs.port;
 }
-class EnetPacketKiller
-{
-public:
-    EnetPacketKiller(ENetPacket* packet) : m_packet(packet) {}
-    ~EnetPacketKiller()  {enet_packet_destroy(m_packet);}
-    ENetPacket* m_packet;
-};
+
 
 
 class Client
@@ -70,34 +65,25 @@ public:
     }
  
     ENetAddress localAddress{ 0,0 };
-    LocalHostPtr local;
+    ENetHostPtr local;
     std::vector<ENetAddress> peerAddresses;
     std::vector<ENetPeer*> peerCandidates;
     std::vector<ENetPeer*> peerConnections;
     bool connectedToServer = false;
     ENetPeer* server;
 };
-class EnetInitialiser
-{
-public:
-    EnetInitialiser() : code(enet_initialize()){}
-    ~EnetInitialiser()
-    {
-        if(code==0)
-            enet_deinitialize();
-    }
-    int code;
-};
+
 int main(int argc, char** argv)
 {
     //// general setting
-    if (argc != 2) {
+    if (argc < 2) {
          printf("invalid command line parameters\n");
-         printf("usage: Client <name>\n");
+         printf("usage: Client <name> <IP optional>\n");
          return 0;
      }
     // set ip address and port    
-    std::string serverIP("82.6.1.150");
+
+    std::string serverIP(argc >=3 ? argv[2] : "82.6.1.150");
    // std::string serverIP("192.168.0.50");
      std::string name(argv[1]);
 
@@ -122,7 +108,7 @@ int main(int argc, char** argv)
     }
    
     enet_address_set_host_ip(&serverAddress, serverIP.c_str());
-    serverAddress.port = 19604;
+    serverAddress.port = 19601;
     client.server = enet_host_connect(client.local.get(), &serverAddress, 0, 0);    
     
   
@@ -142,10 +128,10 @@ int main(int argc, char** argv)
     while (loop) {
 
   
-        if (holePunching && (loopCount % 100 == 0))
+        if (holePunching && (loopCount % 50 == 0))
         {
             for (auto& peer : client.peerCandidates)
-                SendMessage(peer, std::string("INFO:Punch"));
+                Message::Make(MessageType::Info, "Peer").OnData(SendTo(peer));
 
           //  std::cout << "Send a punch\n";
         }
@@ -158,7 +144,7 @@ int main(int argc, char** argv)
                     if (client.peerConnections.size())
                     {
                       std::cout << "Send INFO:Ping\n";
-                     SendMessage(client.peerConnections[0], "INFO:Ping");
+                      Message::Make(MessageType::Info, "Ping").OnData(SendTo(client.peerConnections[0]));
                     }
 
                 }
@@ -177,9 +163,10 @@ int main(int argc, char** argv)
                 if (serverAddress == event.peer->address) {
                     printf("We connected to the server\n");
                     client.connectedToServer = true;
-                    SendMessage(client.server, std::string("VERSION:0.01"));
-                    SendMessage(client.server, std::string("INFO:")+ToString(client.localAddress));
-                    SendMessage(client.server, std::string("LOGIN:")+name);
+
+                    Message::Make(MessageType::Version, "0.01").OnData(SendTo(client.server));
+                    Message::Make(MessageType::Info, ToString(client.localAddress)).OnData(SendTo(client.server));
+                    Message::Make(MessageType::Login, name).OnData(SendTo(client.server));
                 }
                 else if(contains(client.peerAddresses,event.peer->address) )
                 {
@@ -197,7 +184,7 @@ int main(int argc, char** argv)
                         else
                             std::cout << "Peer was NOT in our candidate list: they connected to us\n";
 
-                        Message::Make(MessageType::Info, "hello mate my name is " + name).OnData(Sender(event.peer));
+                        Message::Make(MessageType::Info, "hello mate my name is " + name).OnData(SendTo(event.peer));
                     }
                     else
                     {
@@ -213,7 +200,7 @@ int main(int argc, char** argv)
             }
             case ENET_EVENT_TYPE_RECEIVE:
             {
-                EnetPacketKiller guard(event.packet);
+                EnetPacketRAIIGuard guard(event.packet);
 
                 auto msg = Message::Parse(event.packet->data, event.packet->dataLength);                  
                 printf("We received a message: ");
@@ -242,7 +229,7 @@ int main(int argc, char** argv)
                 if (msg.Type() == MessageType::Info)
                 {
                     if(!strcmp(msg.Content(),"Ping"))
-                        SendMessage(event.peer, "INFO:Pong");
+                        Message::Make(MessageType::Info, "Pong").OnData(SendTo(event.peer));
                 }
 
                 break;
