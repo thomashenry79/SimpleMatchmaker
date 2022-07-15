@@ -1,6 +1,5 @@
 #pragma once
 #include "UserMap.h"
-#include "UserChangedStateVisitor.h"
 #include "IConnections.h"
 #include <string>
 #include "Utils.h"
@@ -18,7 +17,7 @@ public:
     void Update();
     bool VerifyName(const std::string& name) override ;
     bool VerifyVersion(const std::string& version) override;
-    UserChangedStateVisitor& UserChangeStateHandler() override { return visitor; }
+    void OnUserChangeState(class User*) override;
     ENetHost* Host() { return m_host.get(); }
     void BroadcastMessage(const class Message& m) const override;
     void BroadcastActiveUsers() const override;
@@ -28,5 +27,4 @@ private:
     ENetAddress address;
     ENetHostPtr m_host;
     UserMap users;
-    UserChangedStateVisitor visitor;   
 };

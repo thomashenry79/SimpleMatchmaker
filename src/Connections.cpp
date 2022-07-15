@@ -7,18 +7,21 @@
 #include <algorithm>
 #include <iostream>
 #include "Sender.h"
-
+#include "UserChangedStateVisitor.h"
 Connections::Connections(uint16_t port) : 
     address{ ENET_HOST_ANY,port },
-    m_host(enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0), enet_host_destroy),
-    visitor(*this)
+    m_host(enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0), enet_host_destroy)
 {  
     if (!m_host) {
         throw "An error occurred while trying to create an ENet local.\n";
     }
 }
 
-
+void Connections::OnUserChangeState(class User* user)
+{
+    UserChangedStateVisitor v(*this);
+    user->Visit(v);
+}
 
 void Connections::NewConnection(ENetPeer* peer)
 {
