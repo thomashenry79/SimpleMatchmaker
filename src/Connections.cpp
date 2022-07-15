@@ -80,11 +80,14 @@ class IsUserActive
     bool m_bActive;
 public:
     bool operator()() const {return m_bActive; }
-    template <class T> void Visit(const T& s) { m_bActive = true; }
-    template <> void Visit(const WatingForLocalIPState& s) { m_bActive = false; };
-    template <> void Visit(const WatingForLoginState& s) { m_bActive = false; }
-    template <> void Visit(const WatingForVersionState& s) { m_bActive = false; }
-    template <> void Visit(const KickedOffState& s) { m_bActive = false; }
+    void Visit(const JoinedOpenGame&){ m_bActive = true; }
+    void Visit(const OpenedGameState&){ m_bActive = true; }
+    void Visit(const LoggedInState&){ m_bActive = true; }
+    void Visit(const WatingForLocalIPState&){ m_bActive = false; }
+    void Visit(const WatingForLoginState&){ m_bActive = false; }
+    void Visit(const WatingForVersionState&){ m_bActive = false; }
+    void Visit(const KickedOffState&){ m_bActive = false; }
+
 };
 
 class ActiveUsersListMaker
