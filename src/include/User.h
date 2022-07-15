@@ -4,8 +4,7 @@
 #include "States.h"
 #include "StateMachine.h"
 #include <iostream>
-
-class Connections;
+#include "IConnections.h"
 class Message;
 
 
@@ -13,7 +12,7 @@ class User
 {
 public:
 
-    User(ENetPeer* peer, Connections* connections);
+    User(ENetPeer* peer, IConnections* connections);
 
 
     void DisconnectUser(const std::string& reason);
@@ -42,7 +41,7 @@ public:
     
 private:
     ENetAddress m_localIP;
-    Connections* m_connections;
+    IConnections* m_connections;
     ENetPeer* m_peer;
     std::string m_name;
     std::string m_version;

@@ -4,7 +4,7 @@
 #include "Sender.h"
 #include "Utils.h"
 
-User::User(ENetPeer* peer, Connections* connections) :
+User::User(ENetPeer* peer, IConnections* connections) :
     m_peer(peer),
     m_connections(connections)
 {
