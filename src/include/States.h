@@ -1,8 +1,6 @@
 #pragma once
 class Message;
 class User;
-class Connections;
-#include <iostream>
 
 // Zombie state - user has been kicked off, can no longer do anything
 struct KickedOffState

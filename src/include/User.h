@@ -3,7 +3,7 @@
 #include <string>
 #include "States.h"
 #include "StateMachine.h"
-
+#include <iostream>
 
 class Connections;
 class Message;
