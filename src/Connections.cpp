@@ -11,7 +11,7 @@
 Connections::Connections(uint16_t port) : 
     address{ ENET_HOST_ANY,port },
     m_host(enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0), enet_host_destroy),
-    visitor(*this, m_host.get())
+    visitor(*this)
 {  
     if (!m_host) {
         throw "An error occurred while trying to create an ENet local.\n";

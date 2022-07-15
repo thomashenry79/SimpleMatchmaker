@@ -1,11 +1,10 @@
 #pragma once
 #include "States.h"
-#include <enet/enet.h>
-class Connections;
+#include "IConnections.h"
 
 class UserChangedStateVisitor {
 public:
-    UserChangedStateVisitor(Connections& connections, ENetHost* host) : m_connections(connections),m_host(host) {};
+    UserChangedStateVisitor(IConnections& connections) : m_connections(connections) {};
     void Visit(const JoinedOpenGame&);
     void Visit(const OpenedGameState&);
     void Visit(const LoggedInState&);
@@ -14,6 +13,5 @@ public:
     void Visit(const WatingForVersionState&);
     void Visit(const KickedOffState&);
 private:
-    Connections& m_connections;
-    ENetHost* m_host;
+    IConnections& m_connections;
 };

@@ -20,8 +20,8 @@ public:
     bool VerifyVersion(const std::string& version) override;
     UserChangedStateVisitor& UserChangeStateHandler() override { return visitor; }
     ENetHost* Host() { return m_host.get(); }
-    void BroadcastMessage(const class Message& m) const;
-    void BroadcastActiveUsers() const;
+    void BroadcastMessage(const class Message& m) const override;
+    void BroadcastActiveUsers() const override;
 private:
 
     std::vector<User*> ActivePlayers() const;
