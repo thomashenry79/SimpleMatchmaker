@@ -5,6 +5,7 @@
 #include "StateMachine.h"
 #include <iostream>
 #include "IConnections.h"
+#include "UserChangedStateVisitor.h"
 class Message;
 
 

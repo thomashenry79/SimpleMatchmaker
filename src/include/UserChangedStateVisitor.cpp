@@ -1,7 +1,7 @@
 #include "UserChangedStateVisitor.h"
 #include "Message.h"
 #include "Sender.h"
-#include "Connections.h"
+#include "User.h"
 
 
 
