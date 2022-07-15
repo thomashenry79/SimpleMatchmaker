@@ -36,4 +36,5 @@ void UserChangedStateVisitor::Visit(const WatingForVersionState& s)
 
 void UserChangedStateVisitor::Visit(const KickedOffState& s)
 {
+	// shutdown any open game this player has, remove them from any they are in
 }
