@@ -43,6 +43,13 @@ struct OpenedGameState
     void ReceiveMessage(const Message& msg);
 };
 
+struct PendingJoinState
+{
+    PendingJoinState(User* user) : m_user(user) {}
+    User* m_user;
+    void ReceiveMessage(const Message& msg);
+};
+
 
 struct JoinedOpenGame
 {

@@ -4,7 +4,10 @@ std::string ToString(const ENetAddress& addr)
 {
     return std::to_string(addr.host) + ":" + std::to_string(addr.port);
 }
-
+bool operator==(const ENetAddress& lhs, const ENetAddress& rhs)
+{
+    return lhs.host == rhs.host && lhs.port == rhs.port;
+}
 std::string ToReadableString(const ENetAddress& addr)
 {
     char fromIP[40];

@@ -12,10 +12,12 @@ enum class MessageType
     Create,
     Join,
     Leave,
+    Approve,
     Eject,
     Start,
-    PlayersActive,
-    GamesOpen
+    PlayersActive,    
+    GamesOpen,
+    GameInfo,
 };
 
 class BadMessageException : public std::exception {};

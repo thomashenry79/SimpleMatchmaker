@@ -25,28 +25,44 @@ void Connections::OnUserChangeState(class User* user)
 
 void Connections::NewConnection(ENetPeer* peer)
 {
-    if (!users.count(peer))
-        users.insert({ peer, std::make_unique<User>(peer,this) });
+    if (!m_users.count(peer))
+        m_users.insert({ peer, std::make_unique<User>(peer,this) });
 
-    std::cout << "added user " << users.size() << " connected\n";
+    std::cout << "added user " << m_users.size() << " connected\n";
 }
 
 void Connections::LostConnection(ENetPeer* peer)
 {
-    if (users.count(peer))
-        users.erase(peer); 
+    if (m_users.count(peer) == 0)
+        return;
+    auto& u = m_users.at(peer);
+
+    RemoveUserFromAnyGames(u.get());
+
+    m_users.erase(peer);
+    
     BroadcastMessage(Message::Make(MessageType::Info, "Player disconnected"));
     BroadcastActiveUsers();
-    std::cout << "removed user " << users.size() << " connected\n";
+    std::cout << "removed user " << m_users.size() << " connected\n";
 }
 
-
+void Connections::RemoveUserFromAnyGames(User* user)
+{
+    auto it = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(user); });
+    if (it != std::end(m_games))
+    {
+        m_games.erase(it);
+        std::cout << "Closed game created by " << user->Name() << "\n";
+    };
+    for (auto& game : m_games)
+        game.RemoveJoinedOrPending(user);
+}
 
 void Connections::ReceiveMessage(ENetPeer* peer, const unsigned char* data, size_t len)
 {
-    if (!users.count(peer))
+    if (!m_users.count(peer))
         return;
-    auto& user = users.at(peer);
+    auto& user = m_users.at(peer);
     try
     {
         user->OnMessage(Message::Parse(data, len));
@@ -63,7 +79,7 @@ void Connections::ReceiveMessage(ENetPeer* peer, const unsigned char* data, size
 
 bool Connections::VerifyName(const std::string& name)
 {
-    auto success = std::count_if(users.begin(), users.end(), [&](auto& p) {
+    auto success = std::count_if(m_users.begin(), m_users.end(), [&](auto& p) {
         return p.second->Name() == name; }) == 0;
      
     return success;
@@ -83,6 +99,7 @@ public:
     void Visit(const JoinedOpenGame&){ m_bActive = true; }
     void Visit(const OpenedGameState&){ m_bActive = true; }
     void Visit(const LoggedInState&){ m_bActive = true; }
+    void Visit(const PendingJoinState&) { m_bActive = true; }
     void Visit(const WatingForLocalIPState&){ m_bActive = false; }
     void Visit(const WatingForLoginState&){ m_bActive = false; }
     void Visit(const WatingForVersionState&){ m_bActive = false; }
@@ -105,7 +122,7 @@ public:
 std::vector<User*> Connections::ActivePlayers() const
 {
     ActiveUsersListMaker v;
-    return VisitMap(users, v).m_ActiveUsers;
+    return VisitMap(m_users, v).m_ActiveUsers;
 }
 
 std::vector<ENetPeer*> AsPeers(const std::vector<User*>& users)
@@ -129,8 +146,70 @@ void Connections::BroadcastActiveUsers() const
         userList += u->Name() + ",";
 
     BroadcastMessage(Message::Make(MessageType::PlayersActive, userList));
+    BroadcastOpenGames();
+}
+void Connections::BroadcastOpenGames() const
+{
+    std::string gamelist;
+    for (const auto& g : m_games)
+        gamelist += g.ShortInfo() + ",";
+
+    BroadcastMessage(Message::Make(MessageType::GamesOpen, gamelist));
 }
 void Connections::Update()
 {
    
+}
+bool Connections::OpenGame(User* creator, int min_players, int max_players)
+{
+    m_games.push_back(Game(creator, min_players, max_players));
+    return true;
+}
+
+bool Connections::RequestToJoin(User* requestor, const std::string& nameOfGame) 
+{
+    auto it  = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(nameOfGame); });
+    if (it == std::end(m_games))
+        return false;
+    auto joined = it->RequestUserJoin(requestor);
+    if (joined)
+    {
+        Message::Make(MessageType::GameInfo, it->FullInfo()).OnData(SendTo(it->CreatedBy()->Peer()));
+    }
+    return joined;
+}
+
+User* Connections::UserByName(const std::string& name) 
+{
+    auto users = ActivePlayers();
+    for (auto it : users)
+        if (it->Name() == name)
+            return it;
+
+    return nullptr;
+}
+
+void Connections::Eject(User* owner, const std::string& other) 
+{
+    auto p = UserByName(other);
+    if (!p)
+        return;
+    auto it = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(owner); });
+    if (it == std::end(m_games))
+        return;
+
+    it->RemoveJoinedOrPending(p);
+    p->ChangeState<LoggedInState>(p);
+    Message::Make(MessageType::GameInfo, it->FullInfo()).OnData(SendTo(it->CreatedBy()->Peer()));
+}
+
+void Connections::Approve(User* owner, const std::string& other) 
+{
+    auto it = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(owner); });
+    if (it == std::end(m_games))
+        return ;
+    if (it->Approve(other))
+    {
+        Message::Make(MessageType::GameInfo, it->FullInfo()).OnData(SendTo(it->CreatedBy()->Peer()));
+    }
 }

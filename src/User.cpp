@@ -11,6 +11,10 @@ User::User(ENetPeer* peer, IConnections* connections) :
     ChangeState <WatingForVersionState>(this);    
 }
 
+User::~User()
+{
+    // tell connections
+}
 void User::DisconnectUser(const std::string& reason)
 {
     std::cout << "Kick user off: user " << reason << "\n";
@@ -27,7 +31,7 @@ void User::SendInfoMessage(const std::string& msg) const{
     Message::Make(MessageType::Info, msg).OnData(SendTo(m_peer));
 }
 
-bool User::TrySetName(const std::string& name)
+bool User::TrySetNameAndLogIn(const std::string& name)
 {
     if (!m_connections->VerifyName(name))
     {
@@ -39,6 +43,11 @@ bool User::TrySetName(const std::string& name)
         +  "\nyour external IP is " + ToReadableString(m_peer->address) 
         + "\nyour local IP is " + ToReadableString(m_localIP) + "\n");
     m_name = name;
+
+    Message::Make(MessageType::Login, m_name).OnData(SendTo(Peer()));
+    m_connections->BroadcastMessage(Message::Make(MessageType::Info, "Player connected"));
+ 
+
     return true;
 }
 
@@ -56,5 +65,52 @@ bool User::TrySetVersion(const std::string& version)
     }
 
     m_version = version;
+    return true;
+}
+
+
+bool User::CreateGame(const std::string& data)
+{
+    try
+    {
+        auto s = stringSplit(data,',');
+        if (s.size() != 2)
+            throw std::exception();
+        int min_players = std::stoi(s[0]);
+        int max_players = std::stoi(s[1]);
+        
+        if (m_connections->OpenGame(this, min_players, max_players))
+        {
+            Message::Make(MessageType::Create,Name()).OnData(SendTo(Peer()));
+            m_connections->BroadcastMessage(Message::Make(MessageType::Info, "New Game created"));
+            m_connections->BroadcastOpenGames();
+            return true;
+        }
+        return false;
+    }
+    catch (...)
+    {
+        DisconnectUser("Create game message should be format: <CREATE:M,N> M-min num playes, N-max numplayers");
+        return false;
+    }
+}
+void User::Eject(const std::string& data)
+{
+    m_connections->Eject(this, data);
+}
+
+void User::Approve(const std::string& data)
+{
+    m_connections->Approve(this, data);
+}
+bool User::RequestToJoin(const std::string& data)
+{
+    auto creatorName = data;
+    return m_connections->RequestToJoin(this,creatorName);
+}
+bool User::LeaveGame(const std::string& data)
+{
+    data;
+    m_connections->RemoveUserFromAnyGames(this);
     return true;
 }

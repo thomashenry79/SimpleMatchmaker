@@ -12,9 +12,11 @@ const  std::map< MessageType, std::string> Message::headers = std::map< MessageT
     {MessageType::Join,"JOIN:" },
     {MessageType::Leave,"LEAVE:" },
     {MessageType::Eject,"EJECT:" },
+    {MessageType::Approve,"APPROVE:" },
     {MessageType::Start,"START:" },
     {MessageType::PlayersActive,"PLAYERSACTIVE:" },
     {MessageType::GamesOpen,"GAMESOPEN:" },
+    {MessageType::GameInfo,"GAMEINFO:" },
 };
 
 void Message::OnData(std::function<void(const std::string&)> callback) const

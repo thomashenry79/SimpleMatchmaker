@@ -14,19 +14,31 @@ class User
 public:
 
     User(ENetPeer* peer, IConnections* connections);
+    ~User();
 
-
-    void DisconnectUser(const std::string& reason);
-    void OnMessage(const Message& msg);
-    void SendInfoMessage(const std::string& msg) const;
-    bool TrySetName(const std::string& name);
-    bool TrySetVersion(const std::string& name);
-    bool TrySetLocaIPAddress(const std::string& data);
-    ENetPeer* Peer() { return m_peer; }
     const ENetAddress& LocalIP() const { return m_localIP; }
     const std::string& Name() const { return m_name; }
     const std::string& Version() const { return m_version; }
+    ENetPeer* Peer() { return m_peer; }
 
+
+
+    void DisconnectUser(const std::string& reason);
+    void SendInfoMessage(const std::string& msg) const;
+
+    void OnMessage(const Message& msg);
+
+
+    bool TrySetNameAndLogIn(const std::string& name);
+    bool TrySetVersion(const std::string& name);
+    bool TrySetLocaIPAddress(const std::string& data);
+    bool CreateGame(const std::string& data);
+
+    bool RequestToJoin(const std::string& data);
+    bool LeaveGame(const std::string& data);
+   
+    void Eject(const std::string& data);
+    void Approve(const std::string& data);
     template <class Visitor>
     void Visit(Visitor& v) const
     {
@@ -53,7 +65,8 @@ private:
         WatingForLocalIPState,
         LoggedInState, 
         OpenedGameState, 
-        JoinedOpenGame> m_fsm;
+        JoinedOpenGame,
+        PendingJoinState> m_fsm;
 
 private:
     // No copying or moving.

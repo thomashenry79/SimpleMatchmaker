@@ -5,8 +5,11 @@
 #include <algorithm>
 #include <memory>
 
+#define RANGE(x) std::begin(x), std::end(x)
 std::string ToString(const ENetAddress& addr);
 
+
+bool operator==(const ENetAddress& lhs, const ENetAddress& rhs);
 std::string ToReadableString(const ENetAddress& addr);
 
 using ENetHostPtr = std::unique_ptr<ENetHost, void(*)(ENetHost*)>;
@@ -37,10 +40,10 @@ bool contains(const std::vector<T>& v, const T& elem)
 }
 
 
-template<class T>
-void eraseAndRemove(std::vector<T>& vec, const T& elem)
+template<class C, class T>
+void eraseAndRemove(C& container, const T& elem)
 {
-	vec.erase(std::remove(vec.begin(), vec.end(), elem), vec.end());
+	container.erase(std::remove(std::begin(container), std::end(container), elem), std::end(container));
 }
 
 bool TryParseIPAddress(const std::string& msg, ENetAddress& port);

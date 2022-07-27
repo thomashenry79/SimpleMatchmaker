@@ -3,6 +3,7 @@
 #include "IConnections.h"
 #include <string>
 #include "Utils.h"
+#include "Game.h"
 class User;
 class Message;
 
@@ -21,10 +22,18 @@ public:
     ENetHost* Host() { return m_host.get(); }
     void BroadcastMessage(const class Message& m) const override;
     void BroadcastActiveUsers() const override;
+    void BroadcastOpenGames() const override;
+    bool OpenGame(User* creator, int min_players, int max_players) override;
+    bool RequestToJoin(User* requestor, const std::string& data) override;
+    void RemoveUserFromAnyGames(User* user) override;
+    void Eject(User* owner, const std::string& other) override;
+    void Approve(User* owner, const std::string& other) override;
 private:
-
+    User* UserByName(const std::string& name);
+    std::vector<Game> m_games;
     std::vector<User*> ActivePlayers() const;
     ENetAddress address;
     ENetHostPtr m_host;
-    UserMap users;
+    UserMap m_users;
+
 };

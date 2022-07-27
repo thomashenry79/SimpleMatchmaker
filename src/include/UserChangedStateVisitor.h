@@ -12,6 +12,7 @@ public:
     void Visit(const WatingForLoginState&);
     void Visit(const WatingForVersionState&);
     void Visit(const KickedOffState&);
+    void Visit(const PendingJoinState&);
 private:
     IConnections& m_connections;
 };
