@@ -51,6 +51,7 @@ void Connections::RemoveUserFromAnyGames(User* user)
     auto it = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(user); });
     if (it != std::end(m_games))
     {
+        it->KillGame();
         m_games.erase(it);
         std::cout << "Closed game created by " << user->Name() << "\n";
     };

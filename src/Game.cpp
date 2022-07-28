@@ -18,6 +18,13 @@ void Game::RemoveJoinedOrPending( User* user)
 	m_joined.erase(user);
 }
 
+void Game::KillGame()
+{
+	for (auto p : m_joined)
+		p->ChangeState<LoggedInState>(p);
+	for (auto p : m_joined)
+		p->ChangeState<LoggedInState>(p);
+}
 
 bool Game::Approve(const std::string& name)
 {

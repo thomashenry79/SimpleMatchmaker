@@ -8,6 +8,7 @@ class Game
 {
 public:
 	Game(User* creator, int minPlayers, int maxPlayers) : m_creator(creator), m_minPlayers(minPlayers),m_maxPlayers(maxPlayers) {};
+	void KillGame();
 	bool WasCreatedBy(const std::string& name) const;
 	 User* CreatedBy() const { return m_creator; }
 	bool WasCreatedBy(const User* user) const;
