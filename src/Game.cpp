@@ -12,15 +12,22 @@ bool Game::WasCreatedBy(const User* user) const
 	return user == this->m_creator;
 }
 
-void Game::RemoveJoinedOrPending( User* user)
+bool Game::RemoveJoinedOrPending( User* user)
 {
-	m_pending.erase(user);
-	m_joined.erase(user);
+	if (m_pending.count(user)) {
+		m_pending.erase(user);
+		return true;
+	}
+	if (m_joined.count(user)) {
+		m_joined.erase(user);
+		return true;
+	}
+	return false;
 }
 
 void Game::KillGame()
 {
-	for (auto p : m_joined)
+	for (auto p : m_pending)
 		p->ChangeState<LoggedInState>(p);
 	for (auto p : m_joined)
 		p->ChangeState<LoggedInState>(p);

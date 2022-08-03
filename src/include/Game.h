@@ -12,7 +12,7 @@ public:
 	bool WasCreatedBy(const std::string& name) const;
 	 User* CreatedBy() const { return m_creator; }
 	bool WasCreatedBy(const User* user) const;
-	void RemoveJoinedOrPending( User* user) ;
+	bool RemoveJoinedOrPending( User* user) ;
 	bool RequestUserJoin(User* user);
 	bool Approve(const std::string& name);
 	std::string FullInfo() const;

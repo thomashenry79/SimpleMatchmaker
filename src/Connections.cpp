@@ -54,7 +54,7 @@ void Connections::RemoveUserFromAnyGames(User* user)
         it->KillGame();
         m_games.erase(it);
         std::cout << "Closed game created by " << user->Name() << "\n";
-    };
+    }
     for (auto& game : m_games)
         game.RemoveJoinedOrPending(user);
 }
@@ -190,6 +190,7 @@ User* Connections::UserByName(const std::string& name)
     return nullptr;
 }
 
+// owner wants to remove the player specified in the message
 void Connections::Eject(User* owner, const std::string& other) 
 {
     auto p = UserByName(other);
