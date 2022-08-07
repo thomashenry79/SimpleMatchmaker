@@ -87,16 +87,20 @@ int main(int argc, char** argv)
     bool gotPeerDetails = false;
    
     bool attemptConnection = false;
-
-    ServerCallbacks cbs;
-    cbs.Connected = []() {std::cout << "Connected to server\n"; };
-    cbs.Disconnected = []() {std::cout << "Disconnected from server\n"; };
-    cbs.JoinRequest = [](const std::string& userName) { std::cout << userName << "Wants to join\n"; };
-    cbs.GameCreated = [](const std::string& userName) { std::cout << userName << "created a game\n"; };
-
     std::vector<std::string> openGames;
     std::vector<std::string> requestedJoiners;
     std::vector<std::string> joined;
+
+    ServerCallbacks cbs;
+
+    cbs.Connected = []() {std::cout << "Connected to server\n"; };
+    cbs.Disconnected = []() {std::cout << "Disconnected from server\n"; };
+    cbs.Timeout = []() {std::cout << "Timeout trying to connect to server\n"; };
+    cbs.JoinRequestFromOtherPlayer = [](const std::string& userName) { std::cout << userName << "Wants to join\n"; };
+    cbs.JoinRequestOK = []() {std::cout << "Waiting for host to accept\n"; };
+    cbs.GameCreatedOK = []() {std::cout << "We successfully created a game\n"; };
+    cbs.StartP2P = [](const GameStartInfo&) {std::cout << "Ready to Start game\n"; };
+
     cbs.UserList = [](const std::vector<std::string>& userNames) 
     {
         std::cout << "Active Users: ";
@@ -118,7 +122,7 @@ int main(int argc, char** argv)
     {
         requestedJoiners = info.requested;
         joined = info.joined;
-        std::cout << info.ToString();
+        std::cout << "GameInfo: " << info.ToString() << "\n";
     };
 
     std::string peerDetails;

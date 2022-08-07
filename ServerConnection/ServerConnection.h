@@ -7,8 +7,13 @@
 #include <string>
 struct GameStartInfo
 {
+    // The port you should use for the connection
     int port;
+
+    // The list of candidate peerAddresses to try and connect to
     std::vector<ENetAddress> peerAddresses;
+    
+    // Which player you are - 1 or 2;
     int playerNumber;
 };
 
@@ -23,14 +28,30 @@ struct GameInfoStruct
 
 struct ServerCallbacks
 {
+    std::function<void()> Timeout;
     std::function<void()> Disconnected;    
     std::function<void()> Connected;
-    std::function<void(const std::string&)> GameCreated;
+
+    /// You have successfully created a game and are waiting for players to join
+    std::function<void()> GameCreatedOK;
+
+    // A list of current users connected. Every time this changes, this event is called
     std::function<void(const std::vector<std::string>&)> UserList;
+
+    // A list of current open games. Every time this change, this event is called
     std::function<void(const std::vector<std::string>&)> OpenGames;
+
+    // Information about the current game you are involved in, either as host or joiner
+    // Who hosted the game, who has joined, and who is pending
     std::function<void(const GameInfoStruct&)> GameInfo;
-    std::function<void(const std::string&)> JoinRequest;
-    std::function<void()> UserLeft;
+
+    // You are hosting a game and a player has asked to join
+    std::function<void(const std::string&)> JoinRequestFromOtherPlayer;
+
+    // Your request to join a game has been successful, now wait for the host to say yes or no
+    std::function<void()> JoinRequestOK;
+
+    std::function<void(const GameStartInfo&)> StartP2P;
 };
 
 

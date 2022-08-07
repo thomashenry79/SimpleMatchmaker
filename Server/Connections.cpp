@@ -8,6 +8,7 @@
 #include <iostream>
 #include "Sender.h"
 #include "UserChangedStateVisitor.h"
+
 Connections::Connections(uint16_t port) : 
     address{ ENET_HOST_ANY,port },
     m_host(enet_host_create(&address, ENET_PROTOCOL_MAXIMUM_PEER_ID, 0, 0, 0), enet_host_destroy)
@@ -28,7 +29,7 @@ void Connections::NewConnection(ENetPeer* peer)
     if (!m_users.count(peer))
         m_users.insert({ peer, std::make_unique<User>(peer,this) });
 
-    std::cout << "added user " << m_users.size() << " connected\n";
+    std::cout << "added user, currently " << m_users.size() << " connected\n";
 }
 
 void Connections::LostConnection(ENetPeer* peer)
@@ -43,7 +44,7 @@ void Connections::LostConnection(ENetPeer* peer)
     
     BroadcastMessage(Message::Make(MessageType::Info, "Player disconnected"));
     BroadcastActiveUsers();
-    std::cout << "removed user " << m_users.size() << " connected\n";
+    std::cout << "removed user, currently " << m_users.size() << " connected\n";
 }
 
 void Connections::RemoveUserFromAnyGames(User* user)
@@ -175,7 +176,9 @@ bool Connections::RequestToJoin(User* requestor, const std::string& nameOfGame)
     auto joined = it->RequestUserJoin(requestor);
     if (joined)
     {
-        Message::Make(MessageType::GameInfo, it->FullInfo()).OnData(SendTo(it->CreatedBy()->Peer()));
+        auto msg = Message::Make(MessageType::Join, requestor->Name()); 
+        msg.OnData(SendTo(it->CreatedBy()->Peer()));
+        msg.OnData(SendTo(requestor->Peer()));
     }
     return joined;
 }
@@ -202,7 +205,6 @@ void Connections::Eject(User* owner, const std::string& other)
 
     it->RemoveJoinedOrPending(p);
     p->ChangeState<LoggedInState>(p);
-    Message::Make(MessageType::GameInfo, it->FullInfo()).OnData(SendTo(it->CreatedBy()->Peer()));
 }
 
 void Connections::Approve(User* owner, const std::string& other) 
@@ -210,8 +212,5 @@ void Connections::Approve(User* owner, const std::string& other)
     auto it = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(owner); });
     if (it == std::end(m_games))
         return ;
-    if (it->Approve(other))
-    {
-        Message::Make(MessageType::GameInfo, it->FullInfo()).OnData(SendTo(it->CreatedBy()->Peer()));
-    }
+    it->Approve(other);
 }

@@ -44,6 +44,7 @@ bool User::TrySetNameAndLogIn(const std::string& name)
         + "\nyour local IP is " + ToReadableString(m_localIP) + "\n");
     m_name = name;
 
+    std::cout << ToReadableString(m_peer->address) << " is called " << m_name << "\n";
     Message::Make(MessageType::Login, m_name).OnData(SendTo(Peer()));
     m_connections->BroadcastMessage(Message::Make(MessageType::Info, "Player connected"));
  

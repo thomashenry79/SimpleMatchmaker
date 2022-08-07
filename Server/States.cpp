@@ -14,6 +14,7 @@ void WatingForVersionState::ReceiveMessage(const Message& msg)
     if (m_user->TrySetVersion(msg.Content()))
         m_user->ChangeState<WatingForLocalIPState>(m_user);
 }
+
 void WatingForLocalIPState::ReceiveMessage(const Message& msg)
 {
     if (msg.Type() != MessageType::Info)

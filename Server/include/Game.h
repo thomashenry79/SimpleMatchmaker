@@ -15,9 +15,11 @@ public:
 	bool RemoveJoinedOrPending( User* user) ;
 	bool RequestUserJoin(User* user);
 	bool Approve(const std::string& name);
-	std::string FullInfo() const;
+	void SendInfoToAll() const;
+
 	std::string ShortInfo() const;
 private:
+	std::string FullInfo() const;
 	User* m_creator;
 	std::set< User*> m_joined;
 	std::set< User*> m_pending;

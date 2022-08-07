@@ -2,6 +2,8 @@
 #include "User.h"
 #include "Utils.h"
 #include <algorithm>
+#include "Message.h"
+#include "Sender.h"
 bool Game::WasCreatedBy(const std::string& name) const
 {
 	return name == this->m_creator->Name();
@@ -16,13 +18,24 @@ bool Game::RemoveJoinedOrPending( User* user)
 {
 	if (m_pending.count(user)) {
 		m_pending.erase(user);
+		SendInfoToAll();
 		return true;
 	}
 	if (m_joined.count(user)) {
 		m_joined.erase(user);
+		SendInfoToAll();
 		return true;
 	}
 	return false;
+}
+void Game::SendInfoToAll() const
+{
+	auto msg = Message::Make(MessageType::GameInfo, FullInfo());
+	msg.OnData(SendTo(m_creator->Peer()));
+	for (auto p : m_pending)
+		msg.OnData(SendTo(p->Peer()));
+	for (auto p : m_joined)
+		msg.OnData(SendTo(p->Peer()));
 }
 
 void Game::KillGame()
@@ -44,6 +57,7 @@ bool Game::Approve(const std::string& name)
 
 	u->ChangeState<JoinedOpenGame>(u);
 	m_joined.insert(u);
+	SendInfoToAll();
 	return true;
 	
 }
@@ -74,6 +88,6 @@ bool Game::RequestUserJoin(  User* user)
 		return false;
 
 	m_pending.insert(user);
-
+	SendInfoToAll();
 	return true;
 }

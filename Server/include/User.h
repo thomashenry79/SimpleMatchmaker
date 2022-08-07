@@ -8,6 +8,11 @@
 #include "UserChangedStateVisitor.h"
 class Message;
 
+struct StateNameVisitor {
+    std::string name;
+    template <class OldState>
+    void Visit(OldState) { name = typeid(OldState).name(); }
+};
 
 class User
 {
@@ -47,7 +52,12 @@ public:
     template<typename State, typename... Args>
     void ChangeState(Args&&... args)
     {
-        std::cout << "User " << m_peer << " entered state " << typeid(State).name() <<"\n";
+        StateNameVisitor sv;
+        m_fsm.VisitState(sv);
+        if(m_name.length())
+            std::cout << m_name << " changed from " << sv.name << " to " << typeid(State).name() <<"\n";
+        else
+            std::cout << ToReadableString(m_peer->address)<< " changed from " << sv.name << " to " << typeid(State).name() << "\n";
         m_fsm.ChangeState<State>(std::forward<Args>(args)...);
         m_connections->OnUserChangeState(this);
     }
