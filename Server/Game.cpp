@@ -13,7 +13,10 @@ bool Game::WasCreatedBy(const User* user) const
 {
 	return user == this->m_creator;
 }
-
+bool Game::CanStart() const
+{
+	return m_joined.size() == 1;
+}
 bool Game::RemoveJoinedOrPending( User* user)
 {
 	if (m_pending.count(user)) {
@@ -40,10 +43,16 @@ void Game::SendInfoToAll() const
 
 void Game::KillGame()
 {
-	for (auto p : m_pending)
+	auto msg = Message::Make(MessageType::Eject, m_creator->Name());
+
+	for (auto p : m_pending) {
 		p->ChangeState<LoggedInState>(p);
-	for (auto p : m_joined)
+		msg.OnData(SendTo(p->Peer()));
+	}
+	for (auto p : m_joined) {
 		p->ChangeState<LoggedInState>(p);
+		msg.OnData(SendTo(p->Peer()));
+	}
 }
 
 bool Game::Approve(const std::string& name)

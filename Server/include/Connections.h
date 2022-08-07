@@ -27,7 +27,8 @@ public:
     bool RequestToJoin(User* requestor, const std::string& data) override;
     void RemoveUserFromAnyGames(User* user) override;
     void Eject(User* owner, const std::string& other) override;
-    void Approve(User* owner, const std::string& other) override;
+    bool Approve(User* owner, const std::string& other) override;
+    bool StartGame(User* owner) override;
 private:
     User* UserByName(const std::string& name);
     std::vector<Game> m_games;

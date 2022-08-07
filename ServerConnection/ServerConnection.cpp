@@ -100,6 +100,7 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
     if (m_state != ServerConnectionState::Idle)
         return false;
   
+    m_startGameInfo = nullptr;
     m_userName = userName;
     ::eraseAndRemove(m_userName, ',');
     ::eraseAndRemove(m_userName, ':');
@@ -109,14 +110,14 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
 
     m_local = ENetHostPtr(enet_host_create(nullptr, 1, 0, 0, 0), enet_host_destroy);  
 
-    enet_socket_get_address(m_local->socket, &m_localAddress);
-    m_localAddress.host = ReturnLocalIPv4();
+ 
 
     enet_address_set_host_ip(&m_serverAddress, serverIP.c_str());
     m_serverAddress.port = serverPort;
     m_server = enet_host_connect(m_local.get(), &m_serverAddress, 0, 0);
     m_state = ServerConnectionState::Connecting;
 
+   
    
     m_gameID = gameID;
     return true;
@@ -182,6 +183,8 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 m_state = ServerConnectionState::Connected;
                 // Send the details needed to the server
                 Message::Make(MessageType::Version, m_gameID).OnData(SendTo(m_server));
+                enet_socket_get_address(m_local->socket, &m_localAddress);
+                m_localAddress.host = ReturnLocalIPv4();
                 Message::Make(MessageType::Info, ToString(m_localAddress)).OnData(SendTo(m_server));
                 Message::Make(MessageType::Login, m_userName).OnData(SendTo(m_server));
             }
@@ -214,6 +217,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 auto users = stringSplit(msg.Content(), ',');
                 callbacks.UserList(users);
             }
+            
             if (msg.Type() == MessageType::Join)
             {
                 auto name = msg.Content();
@@ -223,6 +227,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 else
                     callbacks.JoinRequestFromOtherPlayer(name);
             }
+            
             if (msg.Type() == MessageType::GamesOpen)
             {
                 auto games = stringSplit(msg.Content(), ',');
@@ -233,14 +238,40 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             { 
                 callbacks.GameInfo(GameInfoStruct(msg.Content()));
             }
-           
+            
+            if(msg.Type() == MessageType::Leave)
+            { 
+                callbacks.LeftGameOK();
+            }
+
+            if (msg.Type() == MessageType::Eject)
+            {
+                callbacks.RemovedFromGame();
+            }
+
+            if (msg.Type() == MessageType::Approve)
+            {
+                std::cout << "Aprroved join, now can start game, sending message to server\n";
+                callbacks.RemovedFromGame();
+                if (m_server)
+                    Message::Make(MessageType::Start, "").OnData(SendTo(m_server));
+            }
             if (msg.Type() == MessageType::Start)
             {
-                m_server = nullptr;
-                m_local = nullptr;
-                m_state = ServerConnectionState::Idle;
-                GameStartInfo info;
-                callbacks.StartP2P(info);
+                m_startGameInfo.reset( new GameStartInfo);
+                auto bits = stringSplit(msg.Content(),',');
+                m_startGameInfo->playerNumber = std::stoi(bits[0]);
+                m_startGameInfo->peerName = bits[1];
+                m_startGameInfo->port = m_localAddress.port;
+
+                ENetAddress addr;
+                if (TryParseIPAddress(bits[2], addr))
+                    m_startGameInfo->peerAddresses.push_back(addr);
+
+                if (TryParseIPAddress(bits[3], addr))
+                    m_startGameInfo->peerAddresses.push_back(addr);
+                enet_peer_disconnect(m_server,0);
+                break;
                 //if (TryParseIPAddressList(msg.Content(), client.peerAddresses))
                 //{
                 //    std::cout << "IPs of peers in message: ";
@@ -268,27 +299,44 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
         }
         case ENET_EVENT_TYPE_DISCONNECT:
         {
-            std::cout << "disconnect event ip " << ToReadableString(event.peer->address) << "\n";
-            if (m_serverAddress == event.peer->address)            {
-                
+            if (m_serverAddress == event.peer->address)
+            {
                 std::cout << "We Disconnected from server: " << ToReadableString(event.peer->address) << "\n";
-            }
+                
+                
+                m_state = ServerConnectionState::Idle;
+                m_server = nullptr;
+                m_local = nullptr;
 
-            if (m_state == ServerConnectionState::Connecting)
-            {
-               // std::cout << "Timeout connecting to server: " << "\n";
-                callbacks.Timeout();
+                if (m_startGameInfo)
+                {
+                    callbacks.StartP2P(*m_startGameInfo);
+                    m_startGameInfo = nullptr;
+                }
+                else if (m_state == ServerConnectionState::Connecting)
+                {
+                    // std::cout << "Timeout connecting to server: " << "\n";
+                    callbacks.Timeout();
+                }
+                else
+                {
+                    callbacks.Disconnected();
+                }
+                return;
+               
             }
-            else
-            {
-                callbacks.Disconnected();
-            }
-           
-            m_state = ServerConnectionState::Idle;
-            m_server = nullptr;
-            m_local = nullptr;
             break;
         }
+        
         }
+     
     }
+}
+
+std::string GameStartInfo::ToString() const
+{
+    auto returnString = std::string("You are player ") + std::to_string(playerNumber) + ", other player is " +  peerName + "\n";
+    returnString += "Use port " + std::to_string(this->port) + ", " + "other player's IP addresses are: ";
+    returnString += ToReadableString(this->peerAddresses[0]) + " and " + ToReadableString(this->peerAddresses[1]);
+    return returnString;
 }

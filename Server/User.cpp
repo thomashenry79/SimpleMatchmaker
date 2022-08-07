@@ -102,7 +102,8 @@ void User::Eject(const std::string& data)
 
 void User::Approve(const std::string& data)
 {
-    m_connections->Approve(this, data);
+    if (m_connections->Approve(this, data))
+        Message::Make(MessageType::Approve, "").OnData(SendTo(m_peer));
 }
 bool User::RequestToJoin(const std::string& data)
 {
@@ -114,4 +115,9 @@ bool User::LeaveGame(const std::string& data)
     data;
     m_connections->RemoveUserFromAnyGames(this);
     return true;
+}
+
+bool User::TryStartGame()
+{
+    return m_connections->StartGame(this);
 }

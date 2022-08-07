@@ -70,6 +70,10 @@ void OpenedGameState::ReceiveMessage(const Message& msg)
     {
         m_user->Approve(msg.Content());
     }
+    if (msg.Type() == MessageType::Start)
+    {
+        m_user->TryStartGame();
+    }
 }
 void JoinedOpenGame::ReceiveMessage(const Message& msg)
 {

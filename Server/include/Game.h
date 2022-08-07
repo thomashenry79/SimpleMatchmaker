@@ -16,8 +16,9 @@ public:
 	bool RequestUserJoin(User* user);
 	bool Approve(const std::string& name);
 	void SendInfoToAll() const;
-
+	bool CanStart() const;
 	std::string ShortInfo() const;
+	User* FirstJoiner() { return *m_joined.begin(); }
 private:
 	std::string FullInfo() const;
 	User* m_creator;

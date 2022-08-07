@@ -14,5 +14,6 @@ public:
 	virtual void BroadcastOpenGames() const = 0;
 	virtual void RemoveUserFromAnyGames(User* user) = 0;
 	virtual void Eject(User* owner, const std::string& other) = 0;
-	virtual void Approve(User* owner, const std::string& other) = 0;
+	virtual bool Approve(User* owner, const std::string& other) = 0;
+	virtual bool StartGame(User* owner) = 0;
 };

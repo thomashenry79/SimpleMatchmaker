@@ -53,11 +53,21 @@ void Connections::RemoveUserFromAnyGames(User* user)
     if (it != std::end(m_games))
     {
         it->KillGame();
+        Message::Make(MessageType::Leave, "").OnData(SendTo(user->Peer()));
         m_games.erase(it);
         std::cout << "Closed game created by " << user->Name() << "\n";
     }
-    for (auto& game : m_games)
-        game.RemoveJoinedOrPending(user);
+    else
+    {
+        for (auto& game : m_games)
+        {
+            if (game.RemoveJoinedOrPending(user))
+            {
+                Message::Make(MessageType::Leave, "").OnData(SendTo(user->Peer()));
+                return;
+            }
+        }
+    }
 }
 
 void Connections::ReceiveMessage(ENetPeer* peer, const unsigned char* data, size_t len)
@@ -203,14 +213,37 @@ void Connections::Eject(User* owner, const std::string& other)
     if (it == std::end(m_games))
         return;
 
-    it->RemoveJoinedOrPending(p);
-    p->ChangeState<LoggedInState>(p);
+    if (it->RemoveJoinedOrPending(p)) {
+        Message::Make(MessageType::Eject, owner->Name()).OnData(SendTo(p->Peer()));
+        p->ChangeState<LoggedInState>(p);
+    }
 }
 
-void Connections::Approve(User* owner, const std::string& other) 
+bool Connections::Approve(User* owner, const std::string& other) 
 {
     auto it = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(owner); });
     if (it == std::end(m_games))
-        return ;
-    it->Approve(other);
+        return false;
+   return it->Approve(other);
+}
+
+bool Connections::StartGame(User* owner)
+{
+    auto it = std::find_if(RANGE(m_games), [&](const Game& g) {return g.WasCreatedBy(owner); });
+    if (it == std::end(m_games))
+        return false;
+    bool canStart = it->CanStart();
+    
+    if (canStart)
+    {
+        User* p2 = it->FirstJoiner();
+        std::string gameInfo1 = std::string("1") + "," + p2->Name() + ","+ ToString(p2->Peer()->address) + "," + ToString(p2->LocalIP());
+        std::string gameInfo2 = std::string("2") + "," + owner->Name() + "," + ToString(owner->Peer()->address) + "," + ToString(owner->LocalIP());
+
+        Message::Make(MessageType::Start, gameInfo1).OnData(SendTo(owner->Peer()));
+        Message::Make(MessageType::Start, gameInfo2).OnData(SendTo(p2->Peer()));
+        RemoveUserFromAnyGames(owner);        
+        BroadcastOpenGames();
+    }
+    return canStart;
 }

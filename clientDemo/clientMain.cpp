@@ -99,8 +99,9 @@ int main(int argc, char** argv)
     cbs.JoinRequestFromOtherPlayer = [](const std::string& userName) { std::cout << userName << "Wants to join\n"; };
     cbs.JoinRequestOK = []() {std::cout << "Waiting for host to accept\n"; };
     cbs.GameCreatedOK = []() {std::cout << "We successfully created a game\n"; };
-    cbs.StartP2P = [](const GameStartInfo&) {std::cout << "Ready to Start game\n"; };
-
+    cbs.StartP2P = [](const GameStartInfo& i) {std::cout << "Ready to Start game, info:\n" << i.ToString(); };
+    cbs.LeftGameOK = []() {std::cout << "We left the game\n"; };
+    cbs.RemovedFromGame = []() {std::cout << "We were removed from the game\n"; };
     cbs.UserList = [](const std::vector<std::string>& userNames) 
     {
         std::cout << "Active Users: ";

@@ -15,6 +15,9 @@ struct GameStartInfo
     
     // Which player you are - 1 or 2;
     int playerNumber;
+
+    std::string peerName;
+    std::string ToString() const;
 };
 
 struct GameInfoStruct
@@ -35,6 +38,12 @@ struct ServerCallbacks
     /// You have successfully created a game and are waiting for players to join
     std::function<void()> GameCreatedOK;
 
+    /// You have successfully left a game 
+    std::function<void()> LeftGameOK;
+
+    /// You have been removed from game, either because the creator left, disconnected, or kicked you off
+    std::function<void()> RemovedFromGame;
+
     // A list of current users connected. Every time this changes, this event is called
     std::function<void(const std::vector<std::string>&)> UserList;
 
@@ -51,6 +60,7 @@ struct ServerCallbacks
     // Your request to join a game has been successful, now wait for the host to say yes or no
     std::function<void()> JoinRequestOK;
 
+    // You are ready to start a P2P session
     std::function<void(const GameStartInfo&)> StartP2P;
 };
 
@@ -85,4 +95,5 @@ private:
     std::string m_userName;
     std::string m_gameID;  
     ServerConnectionState m_state;
+    std::unique_ptr < GameStartInfo > m_startGameInfo = nullptr;
 };

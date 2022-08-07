@@ -39,6 +39,8 @@ public:
     bool TrySetLocaIPAddress(const std::string& data);
     bool CreateGame(const std::string& data);
 
+    bool TryStartGame();
+    
     bool RequestToJoin(const std::string& data);
     bool LeaveGame(const std::string& data);
    
