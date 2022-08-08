@@ -148,6 +148,7 @@ void Connections::BroadcastMessage(const Message& m) const
 {
     auto activeUsers = AsPeers(ActivePlayers());
     m.OnData(SendTo(activeUsers));
+    m.OnData([](const std::string s) {std::cout << "Broadcast: " << s << "\n"; });
 }
 void Connections::BroadcastActiveUsers() const
 {
@@ -239,9 +240,14 @@ bool Connections::StartGame(User* owner)
         User* p2 = it->FirstJoiner();
         std::string gameInfo1 = std::string("1") + "," + p2->Name() + ","+ ToString(p2->Peer()->address) + "," + ToString(p2->LocalIP());
         std::string gameInfo2 = std::string("2") + "," + owner->Name() + "," + ToString(owner->Peer()->address) + "," + ToString(owner->LocalIP());
+        std::cout << "Users starting a game, sending\n";
+        auto m1 = Message::Make(MessageType::Start, gameInfo1); 
+        m1.OnData(SendTo(owner->Peer()));
+        m1.OnData([&](const std::string& s) {std::cout << "To " << owner->Name() << " send " << s << "\n"; });
 
-        Message::Make(MessageType::Start, gameInfo1).OnData(SendTo(owner->Peer()));
-        Message::Make(MessageType::Start, gameInfo2).OnData(SendTo(p2->Peer()));
+        auto m2 = Message::Make(MessageType::Start, gameInfo2);
+        m2.OnData(SendTo(p2->Peer()));
+        m2.OnData([&](const std::string& s) {std::cout << "To " << p2->Name() << " send " << s << "\n"; });
         RemoveUserFromAnyGames(owner);        
         BroadcastOpenGames();
     }

@@ -34,6 +34,7 @@ bool Game::RemoveJoinedOrPending( User* user)
 void Game::SendInfoToAll() const
 {
 	auto msg = Message::Make(MessageType::GameInfo, FullInfo());
+	msg.OnData([](const std::string s) {std::cout << "Send Game info: " << s << "\n"; });
 	msg.OnData(SendTo(m_creator->Peer()));
 	for (auto p : m_pending)
 		msg.OnData(SendTo(p->Peer()));
