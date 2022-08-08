@@ -320,7 +320,7 @@ std::string GameStartInfo::ToString() const
     returnString += "Use port " + std::to_string(this->port) + ", " + "other player's IP addresses are: ";
     returnString += ToReadableString(this->peerAddresses[0]);
     if(peerAddresses.size()>1)
-        returnString + " and " + ToReadableString(this->peerAddresses[1]);
+        returnString += " and " + ToReadableString(this->peerAddresses[1]);
     returnString += "\n";
     return returnString;
 }
