@@ -255,31 +255,20 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 m_startGameInfo->playerNumber = std::stoi(bits[0]);
                 m_startGameInfo->peerName = bits[1];
                 m_startGameInfo->port = m_localAddress.port;
+                m_startGameInfo->yourName = m_userName;
 
                 ENetAddress addr;
                 if (TryParseIPAddress(bits[2], addr))
                     m_startGameInfo->peerAddresses.push_back(addr);
 
                 if (TryParseIPAddress(bits[3], addr))
-                    m_startGameInfo->peerAddresses.push_back(addr);
+                {
+                    if(addr != m_startGameInfo->peerAddresses.back())
+                        m_startGameInfo->peerAddresses.push_back(addr);
+                }
+
                 enet_peer_disconnect(m_server,0);
                 break;
-                //if (TryParseIPAddressList(msg.Content(), client.peerAddresses))
-                //{
-                //    std::cout << "IPs of peers in message: ";
-                //    for (const auto& peerAddress : client.peerAddresses)
-                //        std::cout << ToReadableString(peerAddress) << "\n";
-
-
-                //    // initiate conncetion to peer
-                //    printf("Try to connect to peers: \n");
-                //    for (auto& ad : client.peerAddresses)
-                //    {
-                //        client.peerCandidates.push_back(enet_host_connect(client.local.get(), &ad, 0, 0));
-                //        std::cout << ToReadableString(ad) << "\n";
-                //    }
-                //    std::cout << "\n";
-                //}
             }
             if (msg.Type() == MessageType::Info)
             {
@@ -329,6 +318,9 @@ std::string GameStartInfo::ToString() const
 {
     auto returnString = std::string("You are player ") + std::to_string(playerNumber) + ", other player is " +  peerName + "\n";
     returnString += "Use port " + std::to_string(this->port) + ", " + "other player's IP addresses are: ";
-    returnString += ToReadableString(this->peerAddresses[0]) + " and " + ToReadableString(this->peerAddresses[1]);
+    returnString += ToReadableString(this->peerAddresses[0]);
+    if(peerAddresses.size()>1)
+        returnString + " and " + ToReadableString(this->peerAddresses[1]);
+    returnString += "\n";
     return returnString;
 }

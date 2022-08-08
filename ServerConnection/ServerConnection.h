@@ -9,7 +9,7 @@
 struct GameStartInfo
 {
     // The port you should use for the connection
-    int port;
+    uint16_t port;
 
     // The list of candidate peerAddresses to try and connect to
     std::vector<ENetAddress> peerAddresses;
@@ -17,6 +17,7 @@ struct GameStartInfo
     // Which player you are - 1 or 2;
     int playerNumber;
 
+    std::string yourName;
     std::string peerName;
     std::string ToString() const;
 };

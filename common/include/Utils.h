@@ -10,6 +10,7 @@ std::string ToString(const ENetAddress& addr);
 
 
 bool operator==(const ENetAddress& lhs, const ENetAddress& rhs);
+bool operator!=(const ENetAddress& lhs, const ENetAddress& rhs);
 std::string ToReadableString(const ENetAddress& addr);
 
 using ENetHostPtr = std::unique_ptr<ENetHost, void(*)(ENetHost*)>;

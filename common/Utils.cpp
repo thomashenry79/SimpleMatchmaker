@@ -8,6 +8,10 @@ bool operator==(const ENetAddress& lhs, const ENetAddress& rhs)
 {
     return lhs.host == rhs.host && lhs.port == rhs.port;
 }
+bool operator!=(const ENetAddress& lhs, const ENetAddress& rhs)
+{
+    return !(lhs == rhs);
+}
 std::string ToReadableString(const ENetAddress& addr)
 {
     char fromIP[40];
