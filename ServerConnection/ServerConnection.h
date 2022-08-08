@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include <vector>
 #include <string>
+
 struct GameStartInfo
 {
     // The port you should use for the connection
@@ -74,6 +75,8 @@ public:
 
     // Start Connection immediately
     ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID);
+
+    // Call regularly (ie every frame)
     void Update(ServerCallbacks& callbacks);
     
     // Returns false if the already connected or connecting.

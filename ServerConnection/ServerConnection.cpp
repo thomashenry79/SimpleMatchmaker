@@ -50,14 +50,6 @@ enum class ServerConnectionState
     Connected
 };
 
-bool isConnected(ServerConnectionState state)
-{
-    static std::vector<ServerConnectionState> nonConnectedStates{
-        ServerConnectionState::Idle,
-        ServerConnectionState::Connecting };
-
-    return std::find(RANGE(nonConnectedStates), state) == std::end(nonConnectedStates);
-}
 
 bool ServerConnection::IsConnected() const
 {
