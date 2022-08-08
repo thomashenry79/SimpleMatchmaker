@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <functional>
 #include <memory>
 
 #define RANGE(x) std::begin(x), std::end(x)
@@ -46,7 +47,11 @@ void eraseAndRemove(C& container, const T& elem)
 {
 	container.erase(std::remove(std::begin(container), std::end(container), elem), std::end(container));
 }
-
+template<class C, class T>
+void eraseAndRemoveIfNot(C& container, const T& elem)
+{
+    container.erase(std::remove_if(std::begin(container), std::end(container), [&](const T& el) {return el != elem; }), std::end(container));
+}
 bool TryParseIPAddress(const std::string& msg, ENetAddress& port);
 
 bool TryParseIPAddressList(const std::string& msg,std::vector<ENetAddress>& results);

@@ -171,6 +171,11 @@ int main(int argc, char** argv)
                 {
                     loop = false;
                 }
+                else if (c == 'p')
+                {
+                    if (p2pClient)
+                        p2pClient->SendPing();
+                }
         }
         
 

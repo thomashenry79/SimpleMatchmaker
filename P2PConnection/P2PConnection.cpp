@@ -13,6 +13,25 @@ P2PConnection::P2PConnection(GameStartInfo info) :
         outGoingPeerCandidates.push_back(enet_host_connect(local.get(), &address, 0, 0));
 }
 
+P2PConnection::~P2PConnection()
+{
+    if (local)
+    {
+        for (auto& peer : peerConnections)
+            enet_peer_disconnect(peer,0);
+
+        enet_host_flush(local.get());
+    }
+}
+
+
+void P2PConnection::SendPing() const
+{
+    if (local && peerConnections.size())
+    {
+        Message::Make(MessageType::Info, "Ping").OnData(SendTo(peerConnections[0]));
+    }
+}
 
 void P2PConnection::Update()
 {
@@ -25,9 +44,10 @@ void P2PConnection::Update()
             {
                 std::cout << "connect event, ip:  " << ToReadableString(event.peer->address) << "\n";
 
-                
+                // If the incoming connection is from the candidate list, accept it and clear the candidate list
                 if(contains(m_info.peerAddresses,event.peer->address) )
                 {
+                    eraseAndRemoveIfNot(m_info.peerAddresses, event.peer->address);
                     std::cout << "Connected to a Peer \n";
                  
                     peerConnections.push_back(event.peer);

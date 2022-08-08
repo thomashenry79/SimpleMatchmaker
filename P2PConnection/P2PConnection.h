@@ -10,10 +10,8 @@ class P2PConnection
 {
 public:
     P2PConnection(GameStartInfo info);
-    ~P2PConnection()
-    {
-    }
-    
+    ~P2PConnection();
+    void SendPing() const;
     void Update();
 private:
     GameStartInfo m_info;
