@@ -17,6 +17,7 @@ const  std::map< MessageType, std::string> Message::headers = std::map< MessageT
     {MessageType::PlayersActive,"PLAYERSACTIVE:" },
     {MessageType::GamesOpen,"GAMESOPEN:" },
     {MessageType::GameInfo,"GAMEINFO:" },
+    {MessageType::Lobby,"LOBBY:" },
 };
 
 void Message::OnData(std::function<void(const std::string&)> callback) const

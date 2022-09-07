@@ -15,7 +15,7 @@
 int main(int argc, char** argv)
 {
     EnetInitialiser enetObj;
-    int port = 19601;
+    int port = 19602;
     Connections connections(port);
     // loop
     bool loop = true; 

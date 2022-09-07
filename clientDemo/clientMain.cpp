@@ -21,23 +21,24 @@
 int main(int argc, char** argv)
 {
     //// general setting
-    if (argc < 2) {
+    if (argc < 4) {
          printf("invalid command line parameters\n");
-         printf("usage: Client <name> <IP optional>\n");
+         printf("usage: Client <name> <ServerIP> <SeverPort>\n");
          return 0;
      }
     // set ip address and port    
-
-   std::string serverIP(argc >=3 ? argv[2] : "192.168.0.24");
    std::string name(argv[1]);
+   std::string serverIP(argv[2]);
+   int port = std::stoi(argv[3]);
 
+   std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << "\n";
     // init
     // -- enet
    
    
     EnetInitialiser enetInitGuard;
 
-    ServerConnection serverConnection(serverIP, 19601, name, "SimpleTestApp");
+    ServerConnection serverConnection(serverIP, port, name, "SimpleTestApp");
     std::unique_ptr<P2PConnection> p2pClient(nullptr);
       
 
@@ -55,18 +56,18 @@ int main(int argc, char** argv)
 
     ServerCallbacks cbs;
 
-    cbs.Connected = []() {std::cout << "Connected to server\n"; };
+    cbs.Connected = []() {std::cout << "Connected to server. Press g to create a game. d to disconnect.\n"; };
     cbs.Disconnected = []() {std::cout << "Disconnected from server\n"; };
     cbs.Timeout = []() {std::cout << "Timeout trying to connect to server\n"; };
-    cbs.JoinRequestFromOtherPlayer = [](const std::string& userName) { std::cout << userName << "Wants to join\n"; };
+    cbs.JoinRequestFromOtherPlayer = [](const std::string& userName) { std::cout << userName << " Wants to join. y - allow. n - deny. l - leave game.\n"; };
     cbs.JoinRequestOK = []() {std::cout << "Waiting for host to accept\n"; };
-    cbs.GameCreatedOK = []() {std::cout << "We successfully created a game\n"; };
+    cbs.GameCreatedOK = []() {std::cout << "We successfully created a game. Waiting for others to join. Press l to leave game.\n"; };
     cbs.StartP2P = [&](const GameStartInfo& i) {
         std::cout << "Ready to Start game, info:\n" << i.ToString(); 
         p2pClient.reset(new P2PConnection(i)); 
     };
-    cbs.LeftGameOK = []() {std::cout << "We left the game\n"; };
-    cbs.RemovedFromGame = []() {std::cout << "We were removed from the game\n"; };
+    cbs.LeftGameOK = []() {std::cout << "We left the game.\n"; };
+    cbs.RemovedFromGame = []() {std::cout << "We were removed from the game.\n"; };
     cbs.UserList = [](const std::vector<std::string>& userNames) 
     {
         std::cout << "Active Users: ";
@@ -79,9 +80,21 @@ int main(int argc, char** argv)
     {
         openGames = games;
         std::cout << "Open Games: ";
+        int i = 1;
         for (const auto& u : openGames)
-            std::cout << u << ", ";
-        std::cout << "\n";
+            std::cout << i << ":"<< u << ", ";
+        if (openGames.size() == 0)
+        {
+            std::cout << "<none>";
+            std::cout << "\n";
+            std::cout << "Press g to open a game\n";
+        }
+        else
+        {
+            std::cout << "\n";
+            std::cout << "If you are not hosting, press <number> to request to join a game\n";
+        }
+       
     };
 
     cbs.GameInfo = [&](const GameInfoStruct& info)
@@ -93,7 +106,7 @@ int main(int argc, char** argv)
 
     auto onStart = [&]()
     {
-        std::cout << "P2PConnection closed and game can start, kill p2pClient\n";
+        std::cout << "P2PConnection closed and game can start, killed p2pClient\n";
         p2pClient = nullptr;
     };
     std::string peerDetails;
@@ -118,13 +131,19 @@ int main(int argc, char** argv)
                 {
                     if (c == 'p')
                     {
-                        if (p2pClient)
-                            p2pClient->SendPing();
+                        p2pClient->SendPing();
                     }
                     else if (c == 'r')
                     {
-                        if (p2pClient)
-                            p2pClient->SendReady();
+                        p2pClient->SendReady();
+                    }
+                    else if (c == 'l')
+                    {
+                        p2pClient = nullptr;
+                    }
+                    else if (c == 'i')
+                    {
+                        p2pClient->Info();
                     }
                 }
                 else
@@ -153,7 +172,7 @@ int main(int argc, char** argv)
                     else if (c == 'c')
                     {
                         std::cout << "pressed connect\n";
-                        serverConnection.Connect(serverIP, 19601, name, "SimpleTestApp");
+                        serverConnection.Connect(serverIP, port, name, "SimpleTestApp");
                     }
                     else if (c == 'd')
                     {
