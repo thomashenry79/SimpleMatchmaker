@@ -32,8 +32,8 @@ Message Message::Make(MessageType type, std::string content)
  Message Message::Parse(const unsigned char* data, size_t len)
 {
     std::string input(data, data + len);
-    auto it = headers.end();
-    for (auto it = headers.begin(); it != headers.end();it++)
+    std::map< MessageType, std::string>::const_iterator it = headers.begin();
+    for (; it != headers.end();it++)
     {
         auto s = it->second;
         if (input.compare(0, s.size(), s) == 0)
