@@ -28,7 +28,7 @@ int main(int argc, char** argv)
      }
     // set ip address and port    
 
-   std::string serverIP(argc >=3 ? argv[2] : "82.6.1.150");
+   std::string serverIP(argc >=3 ? argv[2] : "192.168.0.24");
    std::string name(argv[1]);
 
     // init
@@ -91,91 +91,113 @@ int main(int argc, char** argv)
         std::cout << "GameInfo: " << info.ToString() << "\n";
     };
 
+    auto onStart = [&]()
+    {
+        std::cout << "P2PConnection closed and game can start, kill p2pClient\n";
+        p2pClient = nullptr;
+    };
     std::string peerDetails;
     while (loop) {     
         serverConnection.Update(cbs);
         if (p2pClient)
+        {
             p2pClient->Update();
+            if (p2pClient->ReadyToStart())
+                onStart();
+        }
         // Some basic UI
             // send packet
             if (_kbhit()) {
                 auto c = _getch();
-                if (c == '1')
-                {
-                    std::cout << "pressed join game 1\n";
-                    if (openGames.size() > 0)
-                        serverConnection.RequestToJoinGame(openGames[0]);
-
-                }
-                if (c == '2')
-                {
-                    std::cout << "pressed join game 2\n";
-                    if (openGames.size() > 1)
-                        serverConnection.RequestToJoinGame(openGames[1]);
-
-                }
-                if (c == '3')
-                {
-                    std::cout << "pressed join game 3\n";
-                    if (openGames.size() > 2)
-                        serverConnection.RequestToJoinGame(openGames[2]);
-
-                }
-                else if (c == 'c')
-                {
-                    std::cout << "pressed connect\n";
-                    serverConnection.Connect(serverIP, 19601, name, "SimpleTestApp");
-                }
-                else if (c == 'd')
-                {
-                    std::cout << "pressed disconncet\n";
-                    serverConnection.Disconnect();
-                }
-                else if (c == 'g')
-                {
-                    std::cout << "pressed create\n";
-                    serverConnection.CreateGame();
-                }
-                else if (c == 'l')
-                {
-                    std::cout << "pressed leave\n";
-                    serverConnection.LeaveGame();
-                }
-                else if (c == 'y')
-                {
-                    if (requestedJoiners.size()) {
-                        std::cout << "pressed Yes to request to join from " << requestedJoiners[0] << "\n";
-                        serverConnection.ApproveJoinRequest(requestedJoiners[0]);
-                    }
-                }
-                else if (c == 'n')
-                {
-                    if (requestedJoiners.size()) {
-                        std::cout << "pressed No to request to join from " << requestedJoiners[0] << "\n";
-                        serverConnection.EjectPlayer(requestedJoiners[0]);
-                    }
-                }
-                else if (c == 'k')
-                {
-                    if (joined.size()) {
-                        std::cout << "press kick out to  " << joined[0] << "\n";
-                        serverConnection.EjectPlayer(joined[0]);
-                    }
-                }
-                else if (c == 'd')
-                {
-                    std::cout << "press start  " << joined[0] << "\n";
-                    serverConnection.LeaveGame();
-                }                
-                else if (c == 'q')
+                if (c == 'q')
                 {
                     loop = false;
                 }
-                else if (c == 'p')
+
+                if (p2pClient)
                 {
-                    if (p2pClient)
-                        p2pClient->SendPing();
+                    if (c == 'p')
+                    {
+                        if (p2pClient)
+                            p2pClient->SendPing();
+                    }
+                    else if (c == 'r')
+                    {
+                        if (p2pClient)
+                            p2pClient->SendReady();
+                    }
                 }
+                else
+                {
+                    if (c == '1')
+                    {
+                        std::cout << "pressed join game 1\n";
+                        if (openGames.size() > 0)
+                            serverConnection.RequestToJoinGame(openGames[0]);
+
+                    }
+                    if (c == '2')
+                    {
+                        std::cout << "pressed join game 2\n";
+                        if (openGames.size() > 1)
+                            serverConnection.RequestToJoinGame(openGames[1]);
+
+                    }
+                    if (c == '3')
+                    {
+                        std::cout << "pressed join game 3\n";
+                        if (openGames.size() > 2)
+                            serverConnection.RequestToJoinGame(openGames[2]);
+
+                    }
+                    else if (c == 'c')
+                    {
+                        std::cout << "pressed connect\n";
+                        serverConnection.Connect(serverIP, 19601, name, "SimpleTestApp");
+                    }
+                    else if (c == 'd')
+                    {
+                        std::cout << "pressed disconncet\n";
+                        serverConnection.Disconnect();
+                    }
+                    else if (c == 'g')
+                    {
+                        std::cout << "pressed create\n";
+                        serverConnection.CreateGame();
+                    }
+                    else if (c == 'l')
+                    {
+                        std::cout << "pressed leave\n";
+                        serverConnection.LeaveGame();
+                    }
+                    else if (c == 'y')
+                    {
+                        if (requestedJoiners.size()) {
+                            std::cout << "pressed Yes to request to join from " << requestedJoiners[0] << "\n";
+                            serverConnection.ApproveJoinRequest(requestedJoiners[0]);
+                        }
+                    }
+                    else if (c == 'n')
+                    {
+                        if (requestedJoiners.size()) {
+                            std::cout << "pressed No to request to join from " << requestedJoiners[0] << "\n";
+                            serverConnection.EjectPlayer(requestedJoiners[0]);
+                        }
+                    }
+                    else if (c == 'k')
+                    {
+                        if (joined.size()) {
+                            std::cout << "press kick out to  " << joined[0] << "\n";
+                            serverConnection.EjectPlayer(joined[0]);
+                        }
+                    }
+                    else if (c == 'd')
+                    {
+                        std::cout << "press start  " << joined[0] << "\n";
+                        serverConnection.LeaveGame();
+                    }
+                }
+             
         }
         
 

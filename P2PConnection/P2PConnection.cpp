@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Message.h"
 #include "Sender.h"
-
+using namespace std::chrono;
 P2PConnection::P2PConnection(GameStartInfo info) :
     m_info(info),
     localAddress{ ENET_HOST_ANY,info.port },
@@ -25,17 +25,78 @@ P2PConnection::~P2PConnection()
 }
 
 
-void P2PConnection::SendPing() const
+void P2PConnection::SendPing() 
 {
     if (local && peerConnections.size())
     {
         Message::Make(MessageType::Info, "Ping").OnData(SendTo(peerConnections[0]));
+        lastPing = high_resolution_clock::now();
+    }
+}
+void P2PConnection::SendStart()
+{
+    if (m_info.playerNumber != 1) {
+        std::cout << "Only player 1 can start the game\n";
+        return;
+    }
+    if (!(m_bMeReady && m_bOtherReady))
+    {
+        std::cout << "Cannot start yet, both players are not ready\n";
+        return;
+    }
+    if (m_Start)
+    {
+        std::cout << "Already initiated Start process\n";
+        return;
+    }
+    if (local && peerConnections.size())
+    {
+        Message::Make(MessageType::Info, "Start").OnData(SendTo(peerConnections[0]));
+        m_Start = true;
+        std::cout << "Initiating Start process: Sent Start message, then disconnect\n";
+        for(auto& peer : peerConnections)
+            enet_peer_disconnect_later(peer, 0);
     }
 }
 
+void P2PConnection::SendReady()
+{
+    if (m_bMeReady)
+    {
+        std::cout << "You are already ready\n";
+        return;
+    }
+    if (local && peerConnections.size())
+    {
+        Message::Make(MessageType::Info, "Ready").OnData(SendTo(peerConnections[0]));
+        m_bMeReady = true;
+        OnReadyChange();
+    }
+}
+
+void P2PConnection::OnReadyChange()
+{
+    if (m_bMeReady)
+        std::cout << "I'm ready, ";
+    else
+        std::cout << "I'm not ready, ";
+
+    if (m_bOtherReady)
+        std::cout << "other player is ready\n";
+    else
+        std::cout << "other player is not ready\n";
+
+    if (m_bMeReady && m_bOtherReady)
+        SendStart();
+}
+bool P2PConnection::ReadyToStart() const
+{
+    bool allConnectionsDead = peerConnections.size() == 0;
+    bool ready = m_Start && allConnectionsDead;
+    return ready;
+} 
 void P2PConnection::Update()
 {
-
     ENetEvent event;
     while (enet_host_service(local.get(), &event, 1) > 0)
         {
@@ -87,6 +148,35 @@ void P2PConnection::Update()
                 {
                     if(!strcmp(msg.Content(),"Ping"))
                         Message::Make(MessageType::Info, "Pong").OnData(SendTo(event.peer));
+                    
+                    if (!strcmp(msg.Content(), "Pong"))
+                    {
+                        auto pingTime = (int)duration_cast<microseconds>(high_resolution_clock::now() - lastPing).count();
+                        std::cout << "Ping time was " << pingTime << "us\n";
+                    }
+                    if (!strcmp(msg.Content(), "Start"))
+                    {
+                        if(m_Start)
+                            std::cout << "Other player sent duplicate Start message\n";
+                        else
+                        {
+                            m_Start = true;
+                            std::cout << "Other player intiated Start Process, expect disconnect\n";
+                        }
+                    }
+                    if (!strcmp(msg.Content(), "Ready"))
+                    {
+                        if (m_bOtherReady)
+                        {
+                            std::cout << "Other player sent duplicate Ready message\n";
+                        }
+                        else
+                        {
+                            m_bOtherReady = true;
+                            OnReadyChange();
+                        }
+                        
+                    }
                 }
 
                 break;
@@ -111,8 +201,14 @@ void P2PConnection::Update()
                 {
                       std::cout << "Disconnect from unknown\n";
                 }
+                if (ReadyToStart())
+                {
+                    // We don't do anything after this                
+                    std::cout << "All connections closed, Start is set, let's go!!!\n";
+                }
                 break;
             }
             }
         }
 }
+

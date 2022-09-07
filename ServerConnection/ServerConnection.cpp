@@ -251,17 +251,17 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             if (msg.Type() == MessageType::Start)
             {
                 m_startGameInfo.reset( new GameStartInfo);
-                auto bits = stringSplit(msg.Content(),',');
-                m_startGameInfo->playerNumber = std::stoi(bits[0]);
-                m_startGameInfo->peerName = bits[1];
+                auto parts = stringSplit(msg.Content(),',');
+                m_startGameInfo->playerNumber = std::stoi(parts[0]);
+                m_startGameInfo->peerName = parts[1];
                 m_startGameInfo->port = m_localAddress.port;
                 m_startGameInfo->yourName = m_userName;
 
                 ENetAddress addr;
-                if (TryParseIPAddress(bits[2], addr))
+                if (TryParseIPAddress(parts[2], addr))
                     m_startGameInfo->peerAddresses.push_back(addr);
 
-                if (TryParseIPAddress(bits[3], addr))
+                if (TryParseIPAddress(parts[3], addr))
                 {
                     if(addr != m_startGameInfo->peerAddresses.back())
                         m_startGameInfo->peerAddresses.push_back(addr);
