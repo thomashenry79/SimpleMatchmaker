@@ -32,10 +32,13 @@ Message Message::Make(MessageType type, std::string content)
  Message Message::Parse(const unsigned char* data, size_t len)
 {
     std::string input(data, data + len);
-    auto it = std::find_if(headers.begin(), headers.end(), [&](const auto& header) {
-        auto s = header.second;
-        return input.compare(0, s.size(), s) == 0;
-        });
+    auto it = headers.end();
+    for (auto& it = headers.begin(); it != headers.end();it++)
+    {
+        auto s = it->second;
+        if (input.compare(0, s.size(), s) == 0)
+            break;
+    }
     
     if (it == headers.end())
         throw BadMessageException();
