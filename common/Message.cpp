@@ -33,7 +33,7 @@ Message Message::Make(MessageType type, std::string content)
 {
     std::string input(data, data + len);
     auto it = headers.end();
-    for (auto& it = headers.begin(); it != headers.end();it++)
+    for (auto it = headers.begin(); it != headers.end();it++)
     {
         auto s = it->second;
         if (input.compare(0, s.size(), s) == 0)
