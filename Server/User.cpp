@@ -103,7 +103,7 @@ void User::Eject(const std::string& data)
 void User::Approve(const std::string& data)
 {
     if (m_connections->Approve(this, data))
-        Message::Make(MessageType::Approve, "").OnData(SendTo(m_peer));
+        Message::Make(MessageType::Approve, data).OnData(SendTo(m_peer));
 }
 bool User::RequestToJoin(const std::string& data)
 {

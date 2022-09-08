@@ -3,10 +3,8 @@
 #include "Utils.h"
 #include "Message.h"
 #include "Sender.h"
-#include "Utils.h"
 #include <ws2tcpip.h>
 #include <algorithm>
-
 
 GameInfoStruct::GameInfoStruct(const std::string& msg)
 {
@@ -56,7 +54,7 @@ bool ServerConnection::IsConnected() const
     return m_state == ServerConnectionState::Connected;
 }
 
-uint32_t ReturnLocalIPv4() {
+uint32_t ServerConnection::ReturnLocalIPv4() const{
     char host[256];
     char* IP;
     struct hostent* host_entry;
@@ -67,22 +65,28 @@ uint32_t ReturnLocalIPv4() {
 
     auto addr = *((struct in_addr*)host_entry->h_addr_list[0]);
     IP = inet_ntoa(addr); //Convert into IP string
-    printf("Current Host Name: %s\n", host);
+    m_logger(std::string("Current Host Name: ")+ host+"\n");
     // printf("Internal IP: %s\n", IP);
     return addr.S_un.S_addr;
 }
 
 
 
-ServerConnection::ServerConnection() :
+ServerConnection::ServerConnection(std::function<void(const std::string&)> logger) :
     m_state(ServerConnectionState::Idle),
-    m_local(nullptr, [](ENetHost*) {})
+    m_local(nullptr, [](ENetHost*) {}),
+    m_logger(logger)
 {
     
 }
 
-ServerConnection::ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID) :
-    ServerConnection()
+ServerConnection::ServerConnection(
+    const std::string& serverIP,
+    int serverPort,
+    const std::string& userName,
+    const std::string& gameID,
+    std::function<void(const std::string&)> logger) :
+    ServerConnection(logger)
 {
     Connect(serverIP, serverPort, userName, gameID);
 }
@@ -150,6 +154,13 @@ bool ServerConnection::CreateGame() const
         Message::Make(MessageType::Create, "2,2").OnData(SendTo(m_server));
     return true;
 }
+
+bool ServerConnection::StartGame() const
+{
+    if(m_server)
+        Message::Make(MessageType::Start, "").OnData(SendTo(m_server));
+    return true;
+}
 bool ServerConnection::Disconnect()
 {
     if (m_server)
@@ -171,7 +182,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
            // std::cout << "connect event, ip:  " << ToReadableString(event.peer->address) << "\n";
 
             if (event.peer == m_server && m_serverAddress == event.peer->address) {
-                printf("We connected to the server\n");              
+                m_logger("We connected to the server\n");
                 m_state = ServerConnectionState::Connected;
                 // Send the details needed to the server
                 Message::Make(MessageType::Version, m_gameID).OnData(SendTo(m_server));
@@ -182,8 +193,8 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             }
             else
             {
-                std::cout << "Connected to unknown peer...... bin it\n";
-                enet_peer_disconnect_now(event.peer, 0);
+                m_logger("Connected to unknown peer...... bin it\n");
+                enet_peer_reset(event.peer);
             }
             break;
         }
@@ -191,8 +202,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
         {
             EnetPacketRAIIGuard guard(event.packet);
             auto msg = Message::Parse(event.packet->data, event.packet->dataLength);
-           // printf("We received a message: ");
-           // msg.ToConsole();
+    
            
             if (msg.Type() == MessageType::Login)
             {               
@@ -242,11 +252,11 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             }
 
             if (msg.Type() == MessageType::Approve)
-            {
-                std::cout << "Aprroved join, now can start game, sending message to server\n";
-                callbacks.RemovedFromGame();
-                if (m_server)
-                    Message::Make(MessageType::Start, "").OnData(SendTo(m_server));
+            {                
+                callbacks.Approved(msg.Content());
+                // For now, as soon as a player is approved, we start the game. 
+                // Later, we will allow the user to trigger this when enough players have joined the room
+                StartGame();
             }
             if (msg.Type() == MessageType::Start)
             {
@@ -282,7 +292,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
         {
             if (m_serverAddress == event.peer->address)
             {
-                std::cout << "We Disconnected from server: " << ToReadableString(event.peer->address) << "\n";
+                m_logger(std::string("We Disconnected from server: ")+ ToReadableString(event.peer->address) + "\n");
                 
                 
                 m_state = ServerConnectionState::Idle;

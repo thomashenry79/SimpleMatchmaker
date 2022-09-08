@@ -37,8 +37,8 @@ int main(int argc, char** argv)
    
    
     EnetInitialiser enetInitGuard;
-
-    ServerConnection serverConnection(serverIP, port, name, "SimpleTestApp");
+    auto logger = [](const std::string& s) {std::cout << s; };
+    ServerConnection serverConnection(serverIP, port, name, "SimpleTestApp",logger);
     std::unique_ptr<P2PConnection> p2pClient(nullptr);
       
 
@@ -68,6 +68,7 @@ int main(int argc, char** argv)
     };
     cbs.LeftGameOK = []() {std::cout << "We left the game.\n"; };
     cbs.RemovedFromGame = []() {std::cout << "We were removed from the game.\n"; };
+    cbs.Approved = [](const std::string& name) {std::cout << "Approved the join request of " << name << "\n"; };
     cbs.UserList = [](const std::vector<std::string>& userNames) 
     {
         std::cout << "Active Users: ";

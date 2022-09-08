@@ -96,7 +96,7 @@ bool P2PConnection::ReadyToStart() const
 
 void P2PConnection::Info()
 {
-    m_logger( "**************Connection Info:***********\n");
+    m_logger( "**************Lobby Connection Info:***********\n");
     m_logger(std::string("Number of active connections : ") + std::to_string(peerConnections.size()) +"\n");
     m_logger(std::string("Number of pending connections : ")+ std::to_string(outGoingPeerCandidates.size()) + "\n");
     if (m_bPrimaryConnectionEstablished && peerConnections.size())

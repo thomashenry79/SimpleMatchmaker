@@ -4,7 +4,6 @@
 #include <string>
 #include "Utils.h"
 #include <vector>
-#include <string>
 
 struct GameStartInfo
 {
@@ -62,6 +61,9 @@ struct ServerCallbacks
     // Your request to join a game has been successful, now wait for the host to say yes or no
     std::function<void()> JoinRequestOK;
 
+    // Your request to join a game has been successful, now wait for the host to say yes or no
+    std::function<void(const std::string&)> Approved;
+
     // You are ready to start a P2P session
     std::function<void(const GameStartInfo&)> StartP2P;
 };
@@ -72,10 +74,10 @@ class ServerConnection
 {
 public:
     // Start Idle
-    ServerConnection();
+    ServerConnection(std::function<void(const std::string&)> logger);
 
     // Start Connection immediately
-    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID);
+    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID, std::function<void(const std::string&)> logger);
 
     // Call regularly (ie every frame)
     void Update(ServerCallbacks& callbacks);
@@ -86,6 +88,7 @@ public:
     bool RequestToJoinGame(const std::string& gameOwner) const;
     bool LeaveGame() const;
     bool CreateGame() const;
+    bool StartGame() const;
     bool ApproveJoinRequest(const std::string& player);
     bool EjectPlayer(const std::string& player);
     bool IsConnected() const;
@@ -95,9 +98,10 @@ private:
     ENetHostPtr m_local;
     ENetAddress m_serverAddress{ 0,0 };
     ENetPeer* m_server=nullptr;
-
+    uint32_t ReturnLocalIPv4() const;
     std::string m_userName;
     std::string m_gameID;  
     ServerConnectionState m_state;
     std::unique_ptr < GameStartInfo > m_startGameInfo = nullptr;
+    std::function<void(const std::string&)> m_logger;
 };
