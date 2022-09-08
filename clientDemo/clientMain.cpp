@@ -137,7 +137,12 @@ int main(int argc, char** argv)
 
                 if (p2pClient)
                 {
-                    if (c == 'p')
+                    if (c == 'd')
+                    {
+                        std::cout << "Killing p2pClient\n";
+                        p2pClient = nullptr;
+                    }
+                    else if (c == 'p')
                     {
                         p2pClient->SendPing();
                     }
