@@ -153,6 +153,10 @@ int main(int argc, char** argv)
                     {
                         p2pClient->Info();
                     }
+                    else if (c == 's')
+                    {
+                        p2pClient->SendStart();
+                    }
                 }
                 else
                 {

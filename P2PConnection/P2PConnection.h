@@ -17,6 +17,7 @@ public:
     void Update();
     bool ReadyToStart() const;
     void Info();
+    void SendStart();
 private:
     GameStartInfo m_info;
     ENetAddress localAddress{ 0,0 };
@@ -28,7 +29,7 @@ private:
     bool m_bOtherReady=false;
     bool m_Start = false;
     void OnReadyChange();
-    void SendStart();
+    
     bool m_bPrimaryConnectionEstablished = false;
     size_t TotalActivePeers() const {
         return outGoingPeerCandidates.size() + peerConnections.size();

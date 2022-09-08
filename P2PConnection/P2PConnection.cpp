@@ -54,14 +54,23 @@ void P2PConnection::SendStart()
         m_logger("Already initiated Start process\n");
         return;
     }
-    if (local && peerConnections.size())
+    if (!peerConnections.size())
     {
-        Message::Make(MessageType::Info, "Start").OnData(SendTo(peerConnections[0]));
-        m_Start = true;
-        m_logger("Initiating Start process: Sent Start message, then disconnect\n");
-        for(auto& peer : peerConnections)
-            enet_peer_disconnect_later(peer, 0);
+        m_logger("No peer connection\n");
+        return;
     }
+    if (!m_bPrimaryConnectionEstablished)
+    {
+        m_logger("No primary connection agreed\n");
+        return;
+    }
+    
+     Message::Make(MessageType::Info, "Start").OnData(SendTo(peerConnections[0]));
+     m_Start = true;
+     m_logger("Initiating Start process: Sent Start message, then disconnect\n");
+     for(auto& peer : peerConnections)
+         enet_peer_disconnect_later(peer, 0);
+    
 }
 
 void P2PConnection::SendReady()
@@ -90,7 +99,8 @@ void P2PConnection::OnReadyChange()
         m_logger("other player is not ready\n");
 
     if (m_bMeReady && m_bOtherReady)
-        SendStart();
+        m_logger(m_info.playerNumber == 1 ? "Press S to start game\n" : "Waiting for player 1 to start game\n");
+        
 }
 bool P2PConnection::ReadyToStart() const
 {
