@@ -11,6 +11,11 @@ P2PConnection::P2PConnection(GameStartInfo info, std::function<void(const std::s
 {
     for(auto& address : m_info.peerAddresses)
         outGoingPeerCandidates.push_back(enet_host_connect(local.get(), &address, 0, 0));
+
+    logger("********Start P2P connection process with " + info.peerName + ". Try connections on: \n");
+    for (const auto& addr : m_info.peerAddresses)
+        logger(ToReadableString(addr) + "\n");
+    logger("****************\n");
 }
 
 P2PConnection::~P2PConnection()
@@ -101,6 +106,7 @@ void P2PConnection::Info()
     m_logger(std::string("Number of pending connections : ")+ std::to_string(outGoingPeerCandidates.size()) + "\n");
     if (m_bPrimaryConnectionEstablished && peerConnections.size())
         m_logger(std::string("Primary connection is to :") + ToReadableString(peerConnections[0]->address) + "\n");
+    m_logger("*********\n");
 }
 
 void P2PConnection::Update()
@@ -159,7 +165,7 @@ void P2PConnection::Update()
                 }
                 else
                 {
-                    m_logger("Connected to unknown peer...... bin it\n");
+                    m_logger(std::string("Incoming connection from unexpected peer: ") + ToReadableString(event.peer->address) + " bin it\n");
                     enet_peer_reset(event.peer);
                 }
                 Info();
