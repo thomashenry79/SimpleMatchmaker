@@ -62,9 +62,9 @@ int main(int argc, char** argv)
     cbs.JoinRequestFromOtherPlayer = [](const std::string& userName) { std::cout << userName << " Wants to join. y - allow. n - deny. l - leave game.\n"; };
     cbs.JoinRequestOK = []() {std::cout << "Requsted to join game. Waiting for host to respond. Press l to leave.\n"; };
     cbs.GameCreatedOK = []() {std::cout << "We successfully created a game. Waiting for others to join. Press l to leave game.\n"; };
-    cbs.StartP2P = [&](const GameStartInfo& i) {
-        std::cout << "Ready to Start game, info:\n" << i.ToString(); 
-        p2pClient.reset(new P2PConnection(i)); 
+    cbs.StartP2P = [&](const GameStartInfo& info) {
+        std::cout << "Ready to Start game, info:\n" << info.ToString(); 
+        p2pClient.reset(new P2PConnection(info, [](const std::string& s) {std::cout << s; }));
     };
     cbs.LeftGameOK = []() {std::cout << "We left the game.\n"; };
     cbs.RemovedFromGame = []() {std::cout << "We were removed from the game.\n"; };

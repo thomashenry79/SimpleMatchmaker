@@ -10,7 +10,7 @@
 class P2PConnection
 {
 public:
-    P2PConnection(GameStartInfo info);
+    P2PConnection(GameStartInfo info,std::function<void(const std::string&)> logger);
     ~P2PConnection();
     void SendPing();
     void SendReady();
@@ -33,4 +33,5 @@ private:
     size_t TotalActivePeers() const {
         return outGoingPeerCandidates.size() + peerConnections.size();
     }
+    std::function<void(std::string)> m_logger;
 };
