@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     cbs.Disconnected = []() {std::cout << "Disconnected from server\n"; };
     cbs.Timeout = []() {std::cout << "Timeout trying to connect to server\n"; };
     cbs.JoinRequestFromOtherPlayer = [](const std::string& userName) { std::cout << userName << " Wants to join. y - allow. n - deny. l - leave game.\n"; };
-    cbs.JoinRequestOK = []() {std::cout << "Waiting for host to accept\n"; };
+    cbs.JoinRequestOK = []() {std::cout << "Requsted to join game. Waiting for host to respond. Press l to leave.\n"; };
     cbs.GameCreatedOK = []() {std::cout << "We successfully created a game. Waiting for others to join. Press l to leave game.\n"; };
     cbs.StartP2P = [&](const GameStartInfo& i) {
         std::cout << "Ready to Start game, info:\n" << i.ToString(); 
@@ -80,9 +80,15 @@ int main(int argc, char** argv)
     {
         openGames = games;
         std::cout << "Open Games: ";
+        bool isHosting = std::find(RANGE(games), name) != games.end();
         int i = 1;
         for (const auto& u : openGames)
-            std::cout << i << ":"<< u << ", ";
+        {
+            std::cout << i << ":" << u;
+            if (u == name)
+                std::cout << "[You]";
+            std::cout << ", ";
+        }
         if (openGames.size() == 0)
         {
             std::cout << "<none>";
@@ -92,7 +98,8 @@ int main(int argc, char** argv)
         else
         {
             std::cout << "\n";
-            std::cout << "If you are not hosting, press <number> to request to join a game\n";
+            if(!isHosting)
+                std::cout << "Press <number> to request to join a game\n";
         }
        
     };
@@ -150,70 +157,65 @@ int main(int argc, char** argv)
                 {
                     if (c == '1')
                     {
-                        std::cout << "pressed join game 1\n";
+                       // std::cout << "pressed join game 1\n";
                         if (openGames.size() > 0)
                             serverConnection.RequestToJoinGame(openGames[0]);
 
                     }
                     if (c == '2')
                     {
-                        std::cout << "pressed join game 2\n";
+                       // std::cout << "pressed join game 2\n";
                         if (openGames.size() > 1)
                             serverConnection.RequestToJoinGame(openGames[1]);
 
                     }
                     if (c == '3')
                     {
-                        std::cout << "pressed join game 3\n";
+                      //  std::cout << "pressed join game 3\n";
                         if (openGames.size() > 2)
                             serverConnection.RequestToJoinGame(openGames[2]);
 
                     }
                     else if (c == 'c')
                     {
-                        std::cout << "pressed connect\n";
+                      //  std::cout << "pressed connect\n";
                         serverConnection.Connect(serverIP, port, name, "SimpleTestApp");
                     }
                     else if (c == 'd')
                     {
-                        std::cout << "pressed disconncet\n";
+                      //  std::cout << "pressed disconncet\n";
                         serverConnection.Disconnect();
                     }
                     else if (c == 'g')
                     {
-                        std::cout << "pressed create\n";
+                      //  std::cout << "pressed create\n";
                         serverConnection.CreateGame();
                     }
                     else if (c == 'l')
                     {
-                        std::cout << "pressed leave\n";
+                      //  std::cout << "pressed leave\n";
                         serverConnection.LeaveGame();
                     }
                     else if (c == 'y')
                     {
                         if (requestedJoiners.size()) {
-                            std::cout << "pressed Yes to request to join from " << requestedJoiners[0] << "\n";
+                           // std::cout << "pressed Yes to request to join from " << requestedJoiners[0] << "\n";
                             serverConnection.ApproveJoinRequest(requestedJoiners[0]);
                         }
                     }
                     else if (c == 'n')
                     {
                         if (requestedJoiners.size()) {
-                            std::cout << "pressed No to request to join from " << requestedJoiners[0] << "\n";
+                         //   std::cout << "pressed No to request to join from " << requestedJoiners[0] << "\n";
                             serverConnection.EjectPlayer(requestedJoiners[0]);
                         }
                     }
                     else if (c == 'k')
                     {
                         if (joined.size()) {
-                            std::cout << "press kick out to  " << joined[0] << "\n";
+                         //   std::cout << "press kick out to  " << joined[0] << "\n";
                             serverConnection.EjectPlayer(joined[0]);
                         }
-                    }
-                    else if (c == 'd')
-                    {
-                        std::cout << "press start  " << joined[0] << "\n";
-                        serverConnection.LeaveGame();
                     }
                 }
              
