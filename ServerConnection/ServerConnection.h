@@ -66,6 +66,10 @@ struct ServerCallbacks
 
     // You are ready to start a P2P session
     std::function<void(const GameStartInfo&)> StartP2P;
+
+    // You are hosting a game and a player has asked to join
+    std::function<void(const std::string&)> ServerMessage;
+
 };
 
 
@@ -78,7 +82,7 @@ public:
 
     // Start Connection immediately
     ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID, std::function<void(const std::string&)> logger);
-
+    ~ServerConnection();
     // Call regularly (ie every frame)
     void Update(ServerCallbacks& callbacks);
     
@@ -91,7 +95,7 @@ public:
     bool StartGame() const;
     bool ApproveJoinRequest(const std::string& player);
     bool EjectPlayer(const std::string& player);
-    bool IsConnected() const;
+   // bool IsConnected() const;
 
 private:
     ENetAddress m_localAddress{ 0,0 };

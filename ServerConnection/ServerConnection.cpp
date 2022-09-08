@@ -48,11 +48,11 @@ enum class ServerConnectionState
     Connected
 };
 
-
-bool ServerConnection::IsConnected() const
+ServerConnection::~ServerConnection()
 {
-    return m_state == ServerConnectionState::Connected;
+    Disconnect();    
 }
+
 
 uint32_t ServerConnection::ReturnLocalIPv4() const{
     char host[256];
@@ -163,10 +163,14 @@ bool ServerConnection::StartGame() const
 }
 bool ServerConnection::Disconnect()
 {
+    if (m_state == ServerConnectionState::Connecting)
+        return false;
     if (m_server)
-    {
         enet_peer_disconnect(m_server, 0);
-    }
+
+    if (m_local)
+        enet_host_flush(m_local.get());
+
     return true;
 }
 
@@ -182,7 +186,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
            // std::cout << "connect event, ip:  " << ToReadableString(event.peer->address) << "\n";
 
             if (event.peer == m_server && m_serverAddress == event.peer->address) {
-                m_logger("We connected to the server\n");
+ 
                 m_state = ServerConnectionState::Connected;
                 // Send the details needed to the server
                 Message::Make(MessageType::Version, m_gameID).OnData(SendTo(m_server));
@@ -193,7 +197,6 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             }
             else
             {
-                m_logger("Connected to unknown peer...... bin it\n");
                 enet_peer_reset(event.peer);
             }
             break;
@@ -280,25 +283,22 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 enet_peer_disconnect(m_server,0);
                 break;
             }
+
             if (msg.Type() == MessageType::Info)
             {
-                if (!strcmp(msg.Content(), "Ping"))
-                    Message::Make(MessageType::Info, "Pong").OnData(SendTo(event.peer));
+                callbacks.ServerMessage(msg.Content());
             }
 
             break;
         }
         case ENET_EVENT_TYPE_DISCONNECT:
         {
-            if (m_serverAddress == event.peer->address)
+            m_logger(std::string("Disconnection event from peer ")+ ToReadableString(event.peer->address) + "\n");
+              
+            if (m_server == event.peer)
             {
-                m_logger(std::string("We Disconnected from server: ")+ ToReadableString(event.peer->address) + "\n");
                 
                 
-                m_state = ServerConnectionState::Idle;
-                m_server = nullptr;
-                m_local = nullptr;
-
                 if (m_startGameInfo)
                 {
                     callbacks.StartP2P(*m_startGameInfo);
@@ -313,6 +313,10 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 {
                     callbacks.Disconnected();
                 }
+                m_server = nullptr;
+                m_local = nullptr;
+                m_state = ServerConnectionState::Idle;
+
                 return;
                
             }

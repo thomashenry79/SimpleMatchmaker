@@ -76,6 +76,7 @@ int main(int argc, char** argv)
             std::cout << u << ", ";
         std::cout << "\n";
     };
+    cbs.ServerMessage = [](const std::string& msg) {std::cout << "Server Message: " << msg << "\n"; };
 
     cbs.OpenGames = [&](const std::vector<std::string>& games)
     {
@@ -189,7 +190,9 @@ int main(int argc, char** argv)
                     else if (c == 'c')
                     {
                       //  std::cout << "pressed connect\n";
-                        serverConnection.Connect(serverIP, port, name, "SimpleTestApp");
+                        if(serverConnection.Connect(serverIP, port, name, "SimpleTestApp"))
+                            std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << "\n";
+
                     }
                     else if (c == 'd')
                     {
