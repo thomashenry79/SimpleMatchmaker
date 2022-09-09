@@ -14,7 +14,7 @@ struct P2PCallbacks
     std::function<void()> Disconncted;
     std::function<void()> PlayerReady;
     std::function<void()> StartGame;
-    std::function<void()> RevceiveMessage;
+    std::function<void(const void*,size_t)> ReceiveMessage;
 };
 
 class PingHandler
@@ -40,11 +40,12 @@ public:
     P2PConnection(GameStartInfo info,std::function<void(const std::string&)> logger);
     ~P2PConnection();    
     void SendReady();
-    void Update();
+    void Update(P2PCallbacks& callbacks);
     bool ReadyToStart() const;
     void Info();
     void SendStart();
     double GetPing() const;
+    void SendUserMessage(char* buffer, size_t length);
 private:
     GameStartInfo m_info;
     ENetAddress localAddress{ 0,0 };

@@ -12,7 +12,20 @@
 #include "P2PConnection.h"
 #include "Sender.h"
 
+template <typename T>
+inline void hash_combine(std::size_t& seed, const T& value)
+{
+    seed ^= std::hash<T>()(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
 
+template <class It>
+inline std::size_t hash_range(It first, It last)
+{
+    std::size_t h = 0;
+    for (; first != last; ++first)
+        hash_combine(h, *first);
+    return h;
+}
 
 
 
@@ -41,7 +54,12 @@ int main(int argc, char** argv)
     ServerConnection serverConnection(serverIP, port, name, "SimpleTestApp",logger);
     std::unique_ptr<P2PConnection> p2pClient(nullptr);
       
-
+    std::vector<char> buffer = { 5,5,0,10 };
+    std::string s(buffer.data(), buffer.size());
+    std::vector<char> buffer2(s.begin(),s.end());
+    std::vector<char> buffer3(s.data(), s.data()+s.size());
+    std::vector<char> buffer4(s.data(), s.data() + s.length());
+    buffer2;
     // loop
     bool loop = true;
     int pongs = 0;
@@ -113,6 +131,17 @@ int main(int argc, char** argv)
         std::cout << "GameInfo: " << info.ToString() << "\n";
     };
 
+
+
+    P2PCallbacks p2pCbs;
+    p2pCbs.ReceiveMessage = [](const void* buffer, size_t sz)
+    {
+        std::cout << "Received User Message, length " << sz << " hash: " << hash_range((const char*)buffer, (const char*)buffer+sz) <<"\n";
+    };
+
+
+
+
     auto onStart = [&]()
     {
         std::cout << "P2PConnection closed and game can start, killed p2pClient\n";
@@ -123,7 +152,7 @@ int main(int argc, char** argv)
         serverConnection.Update(cbs);
         if (p2pClient)
         {
-            p2pClient->Update();
+            p2pClient->Update(p2pCbs);
             if (p2pClient->ReadyToStart())
                 onStart();
         }
@@ -163,6 +192,15 @@ int main(int argc, char** argv)
                     else if (c == 's')
                     {
                         p2pClient->SendStart();
+                    }
+                    else if (c == 'm')
+                    {
+                        int bufferSize = 10 + rand() % 300;
+                        std::vector<char> buffer(bufferSize);
+                        for (size_t i = 0; i < bufferSize; i++)
+                            buffer[i] = rand() % 256;
+                        std::cout << "Sending a random user message, length " << bufferSize << " hash: " << hash_range(buffer.begin(), buffer.end()) <<"\n";
+                        p2pClient->SendUserMessage(buffer.data(),buffer.size());
                     }
                 }
                 else

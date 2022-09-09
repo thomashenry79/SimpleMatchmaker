@@ -18,7 +18,7 @@ enum class MessageType
     PlayersActive,    
     GamesOpen,
     GameInfo,
-    Lobby
+    UserMessage
 };
 
 class BadMessageException : public std::exception {};
@@ -26,7 +26,8 @@ class BadMessageException : public std::exception {};
 class Message
 {
 public:
-    void OnData(std::function<void(const std::string&)> callback) const;    
+    void OnData(std::function<void(const std::string&)> callback) const; 
+    void OnPayload(std::function<void(const void*,size_t)> callback) const;
     static Message Make(MessageType type, std::string content);
     static Message Parse(const unsigned char* data, size_t len);
     MessageType Type() const;

@@ -173,7 +173,13 @@ double P2PConnection::GetPing() const
 {
     return m_pingHandler.GetPing()/1e3;
 }
-void P2PConnection::Update()
+
+void P2PConnection::SendUserMessage(char* buffer, size_t length)
+{
+    if (m_bPrimaryConnectionEstablished && peerConnections.size() == 1)
+        Message::Make(MessageType::UserMessage, std::string(buffer,length)).OnData(SendTo(peerConnections[0]));
+}
+void P2PConnection::Update(P2PCallbacks& callbacks)
 {
     ENetEvent event;
     CleanRedundantConnections();
@@ -229,16 +235,23 @@ void P2PConnection::Update()
             case ENET_EVENT_TYPE_RECEIVE:
             {
                 EnetPacketRAIIGuard guard(event.packet);
+                
 
                 auto msg = Message::Parse(event.packet->data, event.packet->dataLength);                  
-                if (strcmp(msg.Content(), "Ping") != 0 && strcmp(msg.Content(), "Pong"))
+               
+                if (msg.Type() == MessageType::UserMessage)
                 {
-                    m_logger("We received a message: ");
-                    msg.ToConsole();
+                    msg.OnPayload(callbacks.ReceiveMessage);
+                  //  callbacks.RecieveMessage(msg.Content().data)
                 }
-                
-                if (msg.Type() == MessageType::Info)
+                else if (msg.Type() == MessageType::Info)
                 {
+                    if (strcmp(msg.Content(), "Ping") != 0 && strcmp(msg.Content(), "Pong"))
+                    {
+                        m_logger("We received a message: ");
+                        msg.ToConsole();
+                    }
+
                     if (!strcmp(msg.Content(), "PRIMARY"))
                     {
                         m_bPrimaryConnectionEstablished = true;

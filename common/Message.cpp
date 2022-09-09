@@ -17,14 +17,17 @@ const  std::map< MessageType, std::string> Message::headers = std::map< MessageT
     {MessageType::PlayersActive,"PLAYERSACTIVE:" },
     {MessageType::GamesOpen,"GAMESOPEN:" },
     {MessageType::GameInfo,"GAMEINFO:" },
-    {MessageType::Lobby,"LOBBY:" },
+    {MessageType::UserMessage,"USERMESSAGE:" },
 };
 
 void Message::OnData(std::function<void(const std::string&)> callback) const
 {
     callback(m_data);
 }
-
+void Message::OnPayload(std::function<void(const void*, size_t)> callback) const
+{
+    callback((const void*)Content(), m_data.size() - headers.at(m_type).length());
+}
 Message Message::Make(MessageType type, std::string content)
 {
     return Message(type, headers.at(type) + content);
