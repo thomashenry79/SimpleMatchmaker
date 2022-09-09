@@ -29,15 +29,6 @@ P2PConnection::~P2PConnection()
     }
 }
 
-
-void P2PConnection::SendPing() 
-{
-    if (local && peerConnections.size())
-    {
-        Message::Make(MessageType::Info, "Ping").OnData(SendTo(peerConnections[0]));
-        lastPing = high_resolution_clock::now();
-    }
-}
 void P2PConnection::SendStart()
 {
     if (m_info.playerNumber != 1) {
@@ -119,9 +110,8 @@ void P2PConnection::Info()
     m_logger("*********\n");
 }
 
-void P2PConnection::Update()
+void P2PConnection::CleanRedundantConnections()
 {
-    ENetEvent event;
     if ( m_bPrimaryConnectionEstablished && TotalActivePeers()>1)
     {
         for (size_t i = 1; i < peerConnections.size(); i++)
@@ -135,6 +125,61 @@ void P2PConnection::Update()
         outGoingPeerCandidates.clear();
         Info();
     }
+}
+
+
+PingHandler::PingHandler() : lastPing(high_resolution_clock::now())
+{
+
+}
+
+void PingHandler::Update(ENetPeer* peerToPing)
+{
+    if (m_bPingSent)
+        return;
+
+    if (!peerToPing)
+        return;
+
+    auto now = high_resolution_clock::now();
+    auto timeSinceLastPing = (int)duration_cast<milliseconds>(now - lastPing).count();
+    if (timeSinceLastPing >= pingPeriodMS)
+    {
+        Message::Make(MessageType::Info, "Ping").OnData(SendTo(peerToPing));
+        lastPing = now;
+        m_bPingSent = true;
+    }
+}
+//#include <iostream>
+void PingHandler::OnPong()
+{
+    auto now = high_resolution_clock::now();
+    auto thisPing = (double)duration_cast<microseconds>(now - lastPing).count();
+    
+    //ignore silly big pings, these are probablt not representative
+    if (thisPing > 2 *1e6)
+        return;
+
+    if (m_pingEMA == 0)
+        m_pingEMA = thisPing;
+    
+    m_pingEMA = ((thisPing - m_pingEMA) * EMA_Constant) + m_pingEMA;
+   // std::cout << "last ping was " << thisPing << "us" << ", ping average: " << m_pingEMA <<"us\n";
+    
+    m_bPingSent = false;
+}
+
+double P2PConnection::GetPing() const 
+{
+    return m_pingHandler.GetPing()/1e3;
+}
+void P2PConnection::Update()
+{
+    ENetEvent event;
+    CleanRedundantConnections();
+    if (m_bPrimaryConnectionEstablished && peerConnections.size() == 1)
+        m_pingHandler.Update(peerConnections[0]);
+
     while (enet_host_service(local.get(), &event, 1) > 0)
         {
             switch (event.type) {
@@ -186,8 +231,11 @@ void P2PConnection::Update()
                 EnetPacketRAIIGuard guard(event.packet);
 
                 auto msg = Message::Parse(event.packet->data, event.packet->dataLength);                  
-                m_logger("We received a message: ");
-                msg.ToConsole();
+                if (strcmp(msg.Content(), "Ping") != 0 && strcmp(msg.Content(), "Pong"))
+                {
+                    m_logger("We received a message: ");
+                    msg.ToConsole();
+                }
                 
                 if (msg.Type() == MessageType::Info)
                 {
@@ -215,8 +263,7 @@ void P2PConnection::Update()
                     
                     if (!strcmp(msg.Content(), "Pong"))
                     {
-                        auto pingTime = (int)duration_cast<microseconds>(high_resolution_clock::now() - lastPing).count();
-                        m_logger(std::string("Ping time was ") + std::to_string(pingTime) + "us\n");
+                        m_pingHandler.OnPong();
                     }
                     if (!strcmp(msg.Content(), "Start"))
                     {
@@ -243,7 +290,7 @@ void P2PConnection::Update()
                 if (contains(peerConnections,event.peer))
                 {
                     if(event.peer== peerConnections[0])
-                        m_logger(std::string("We Disconnected from peer: ")+ ToReadableString(event.peer->address) + "\n");
+                        m_logger(std::string("We Disconnected from primary connection: ")+ ToReadableString(event.peer->address) + "\n");
                     else
                         m_logger(std::string("We Disconnected from redundant connection: ") + ToReadableString(event.peer->address) + "\n");
                     eraseAndRemove(peerConnections, event.peer);

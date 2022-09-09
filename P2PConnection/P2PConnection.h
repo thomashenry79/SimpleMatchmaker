@@ -7,24 +7,50 @@
 #include <string>
 #include "ServerConnection.h"
 #include <chrono>
+
+struct P2PCallbacks
+{
+    std::function<void()> Connected;
+    std::function<void()> Disconncted;
+    std::function<void()> PlayerReady;
+    std::function<void()> StartGame;
+    std::function<void()> RevceiveMessage;
+};
+
+class PingHandler
+{
+public:
+    PingHandler();
+    void Update(ENetPeer* peerToPing);
+    void OnPong();
+    double GetPing() const { return m_pingEMA; }
+private:
+    // Exponential moving average, taken twice a second, over the last 15 seconds
+    double m_pingEMA = 0;
+    const int emaPeriodMS = 15 * 1000;
+    const int pingPeriodMS = 500;
+    const double EMA_Constant = 2 / (1.0 + (emaPeriodMS / pingPeriodMS));
+    unsigned int m_bPingSent =false;
+    std::chrono::steady_clock::time_point lastPing;
+};
+
 class P2PConnection
 {
 public:
     P2PConnection(GameStartInfo info,std::function<void(const std::string&)> logger);
-    ~P2PConnection();
-    void SendPing();
+    ~P2PConnection();    
     void SendReady();
     void Update();
     bool ReadyToStart() const;
     void Info();
     void SendStart();
+    double GetPing() const;
 private:
     GameStartInfo m_info;
     ENetAddress localAddress{ 0,0 };
     ENetHostPtr local;
     std::vector<ENetPeer*> outGoingPeerCandidates;
     std::vector<ENetPeer*> peerConnections;
-    std::chrono::steady_clock::time_point lastPing;
     bool m_bMeReady=false;
     bool m_bOtherReady=false;
     bool m_Start = false;
@@ -35,4 +61,6 @@ private:
         return outGoingPeerCandidates.size() + peerConnections.size();
     }
     std::function<void(std::string)> m_logger;
+    void CleanRedundantConnections();
+    PingHandler m_pingHandler;
 };

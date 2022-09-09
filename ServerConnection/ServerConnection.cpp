@@ -299,6 +299,8 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             {
                 
                 
+                m_server = nullptr;
+                m_local = nullptr;
                 if (m_startGameInfo)
                 {
                     callbacks.StartP2P(*m_startGameInfo);
@@ -313,8 +315,6 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 {
                     callbacks.Disconnected();
                 }
-                m_server = nullptr;
-                m_local = nullptr;
                 m_state = ServerConnectionState::Idle;
 
                 return;

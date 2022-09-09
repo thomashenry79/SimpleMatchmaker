@@ -119,7 +119,7 @@ int main(int argc, char** argv)
         p2pClient = nullptr;
     };
     std::string peerDetails;
-    while (loop) {     
+    while (loop) {    
         serverConnection.Update(cbs);
         if (p2pClient)
         {
@@ -145,7 +145,8 @@ int main(int argc, char** argv)
                     }
                     else if (c == 'p')
                     {
-                        p2pClient->SendPing();
+                        auto ping = p2pClient->GetPing();
+                        std::cout << "Ping to opponent is " << ping <<"\n";
                     }
                     else if (c == 'r')
                     {
