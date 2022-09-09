@@ -134,7 +134,7 @@ int main(int argc, char** argv)
 
 
     P2PCallbacks p2pCbs;
-    p2pCbs.ReceiveMessage = [](const void* buffer, size_t sz)
+    p2pCbs.ReceiveUserMessage = [](const void* buffer, size_t sz)
     {
         std::cout << "Received User Message, length " << sz << " hash: " << hash_range((const char*)buffer, (const char*)buffer+sz) <<"\n";
     };

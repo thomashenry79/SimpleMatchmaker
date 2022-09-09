@@ -14,7 +14,7 @@ struct P2PCallbacks
     std::function<void()> Disconncted;
     std::function<void()> PlayerReady;
     std::function<void()> StartGame;
-    std::function<void(const void*,size_t)> ReceiveMessage;
+    std::function<void(const void*,size_t)> ReceiveUserMessage;
 };
 
 class PingHandler

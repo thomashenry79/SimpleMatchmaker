@@ -241,7 +241,7 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
                
                 if (msg.Type() == MessageType::UserMessage)
                 {
-                    msg.OnPayload(callbacks.ReceiveMessage);
+                    msg.OnPayload(callbacks.ReceiveUserMessage);
                   //  callbacks.RecieveMessage(msg.Content().data)
                 }
                 else if (msg.Type() == MessageType::Info)
