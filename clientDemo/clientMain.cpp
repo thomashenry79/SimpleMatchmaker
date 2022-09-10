@@ -134,13 +134,28 @@ int main(int argc, char** argv)
 
 
     P2PCallbacks p2pCbs;
-    p2pCbs.ReceiveUserMessage = [](const void* buffer, size_t sz)
+    p2pCbs.ReceiveUserMessage = [&](const void* buffer, size_t sz)
     {
-        std::cout << "Received User Message, length " << sz << " hash: " << hash_range((const char*)buffer, (const char*)buffer+sz) <<"\n";
+        auto buf = (const char*)buffer;
+        if (buf[0] == 0)
+        {
+            size_t hsh = hash_range((const char*)buffer, (const char*)buffer + sz);
+            std::cout << "Received User Message, length " << sz << " hash: " << hsh % 10000 << "\n";
+            std::vector<char> response (1 + sizeof(size_t));
+            response[0] = 1;
+            *(size_t*)(&response[1]) = hsh;
+
+            p2pClient->SendUserMessage(response.data(), response.size());
+        }
+        else if (buf[0] == 1)
+        {
+            size_t* hsh = (size_t*)&buf[1];
+            std::cout << "Received acknowledgement, peer thinks hash was " << (*hsh) % 10000 << "\n";
+        }
     };
 
 
-
+    srand(time(NULL));
 
     auto onStart = [&]()
     {
@@ -197,9 +212,10 @@ int main(int argc, char** argv)
                     {
                         int bufferSize = 10 + rand() % 300;
                         std::vector<char> buffer(bufferSize);
-                        for (size_t i = 0; i < bufferSize; i++)
+                        buffer[0] = 0;
+                        for (size_t i = 1; i < bufferSize; i++)
                             buffer[i] = rand() % 256;
-                        std::cout << "Sending a random user message, length " << bufferSize << " hash: " << hash_range(buffer.begin(), buffer.end()) <<"\n";
+                        std::cout << "Sending a random user message, length " << bufferSize << " hash: " << hash_range(buffer.begin(), buffer.end())%10000 <<"\n";
                         p2pClient->SendUserMessage(buffer.data(),buffer.size());
                     }
                 }
