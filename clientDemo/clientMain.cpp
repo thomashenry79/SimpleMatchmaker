@@ -33,6 +33,7 @@ inline std::size_t hash_range(It first, It last)
 
 int main(int argc, char** argv)
 {
+    srand(time(NULL));
     //// general setting
     if (argc < 4) {
          printf("invalid command line parameters\n");
@@ -48,10 +49,10 @@ int main(int argc, char** argv)
     // init
     // -- enet
    
-   
+    std::string userData = std::to_string(rand() % 750 + 500);
     EnetInitialiser enetInitGuard;
     auto logger = [](const std::string& s) {std::cout << s; };
-    ServerConnection serverConnection(serverIP, port, name, "SimpleTestApp",logger);
+    ServerConnection serverConnection(serverIP, port, name, userData,"SimpleTestApp",logger);
     std::unique_ptr<P2PConnection> p2pClient(nullptr);
       
     std::vector<char> buffer = { 5,5,0,10 };
@@ -71,7 +72,7 @@ int main(int argc, char** argv)
     std::vector<std::string> openGames;
     std::vector<std::string> requestedJoiners;
     std::vector<std::string> joined;
-
+    
     ServerCallbacks cbs;
 
     cbs.Connected = []() {std::cout << "Connected to server. Press g to create a game. d to disconnect.\n"; };
@@ -87,11 +88,11 @@ int main(int argc, char** argv)
     cbs.LeftGameOK = []() {std::cout << "We left the game.\n"; };
     cbs.RemovedFromGame = []() {std::cout << "We were removed from the game.\n"; };
     cbs.Approved = [](const std::string& name) {std::cout << "Approved the join request of " << name << "\n"; };
-    cbs.UserList = [](const std::vector<std::string>& userNames) 
+    cbs.UserList = [](const std::vector<PlayerInfo>& userNames) 
     {
         std::cout << "Active Users: ";
         for (const auto& u : userNames)
-            std::cout << u << ", ";
+            std::cout << u.name <<"(data:" << u.data << "), ";
         std::cout << "\n";
     };
     cbs.ServerMessage = [](const std::string& msg) {std::cout << "Server Message: " << msg << "\n"; };
@@ -155,7 +156,7 @@ int main(int argc, char** argv)
     };
 
 
-    srand(time(NULL));
+   
 
     auto onStart = [&]()
     {
@@ -245,7 +246,7 @@ int main(int argc, char** argv)
                     else if (c == 'c')
                     {
                       //  std::cout << "pressed connect\n";
-                        if(serverConnection.Connect(serverIP, port, name, "SimpleTestApp"))
+                        if(serverConnection.Connect(serverIP, port, name, userData,"SimpleTestApp"))
                             std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << "\n";
 
                     }

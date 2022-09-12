@@ -63,7 +63,7 @@ const char* Message::Content() const
 //    if (m_type != MessageType::Start)
 //        return false;
 //
-//    auto strings = split(Content(), ':');
+  //  auto strings = split(Content(), ':');
 //
 //    if (strings.size() != 2)
 //        return false;

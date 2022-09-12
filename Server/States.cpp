@@ -28,12 +28,23 @@ void WatingForLoginState::ReceiveMessage(const Message& msg)
     if (msg.Type() != MessageType::Login)
         throw BadMessageException();
 
-    std::string name = msg.Content();
+   // std::string name = 
+    std::string content = msg.Content();
+    auto splitPos = content.find_first_of(':', 0);
+    
+    std::string name, userData;
+    if (splitPos != std::string::npos)
+    {
+        name = content.substr(0, splitPos);
+        userData = content.substr(splitPos + 1);
+    }
+    else
+    {
+        name = content;
+        userData = "";
+    }
 
-    // Remove comma so this can be used as a delimiter
-    ::eraseAndRemove(name, ',');
-
-    if (m_user->TrySetNameAndLogIn(name))
+    if (m_user->TrySetNameAndLogIn(name,userData))
         m_user->ChangeState<LoggedInState>(m_user);
 
 }

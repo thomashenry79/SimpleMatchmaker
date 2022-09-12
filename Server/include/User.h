@@ -23,6 +23,7 @@ public:
 
     const ENetAddress& LocalIP() const { return m_localIP; }
     const std::string& Name() const { return m_name; }
+    const std::string& Data() const { return m_data; }
     const std::string& Version() const { return m_version; }
     ENetPeer* Peer() { return m_peer; }
 
@@ -34,7 +35,7 @@ public:
     void OnMessage(const Message& msg);
 
 
-    bool TrySetNameAndLogIn(const std::string& name);
+    bool TrySetNameAndLogIn(const std::string& name, const std::string& userData);
     bool TrySetVersion(const std::string& name);
     bool TrySetLocaIPAddress(const std::string& data);
     bool CreateGame(const std::string& data);
@@ -69,6 +70,7 @@ private:
     IConnections* m_connections;
     ENetPeer* m_peer;
     std::string m_name;
+    std::string m_data;
     std::string m_version;
     StateMachine< 
         KickedOffState,

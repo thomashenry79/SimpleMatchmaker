@@ -15,6 +15,8 @@ GameInfoStruct::GameInfoStruct(const std::string& msg)
     if (parts.size() >2 && parts[2].length())
         requested =  stringSplit(parts[2], ',');
 }
+
+
 std::string GameInfoStruct::ToString() const
 {
     std::string info;
@@ -84,20 +86,22 @@ ServerConnection::ServerConnection(
     const std::string& serverIP,
     int serverPort,
     const std::string& userName,
+    const std::string& userData,
     const std::string& gameID,
     std::function<void(const std::string&)> logger) :
     ServerConnection(logger)
 {
-    Connect(serverIP, serverPort, userName, gameID);
+    Connect(serverIP, serverPort, userName, userData,gameID);
 }
 
-bool ServerConnection::Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID)
+bool ServerConnection::Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& userData, const std::string& gameID)
 { 
     if (m_state != ServerConnectionState::Idle)
         return false;
   
     m_startGameInfo = nullptr;
     m_userName = userName;
+    m_userData = userData;
     ::eraseAndRemove(m_userName, ',');
     ::eraseAndRemove(m_userName, ':');
 
@@ -173,7 +177,27 @@ bool ServerConnection::Disconnect()
 
     return true;
 }
+std::vector<PlayerInfo> ParsePlayerInfo(const std::string& message)
+{
+    std::vector<PlayerInfo> info;
+    auto pos = message.find_first_of(':');
+    auto numberOfPlayers = std::stoul(message.substr(0, pos++));
 
+    for (int i = 0; i < numberOfPlayers; i++)
+    {
+        auto next = message.find_first_of(':', pos);
+        auto name = message.substr(pos, next - pos);
+        pos = next;
+        next= message.find_first_of(':', ++pos);
+        auto lengthOfUserData = std::stoul(message.substr(pos, next-pos));
+        pos = ++next;
+        next = pos + lengthOfUserData;
+        auto data = message.substr(pos, next - pos);
+        pos = next;
+        info.push_back({ name,data });
+    }
+    return info;
+}
 void ServerConnection::Update(ServerCallbacks& callbacks)
 {
     if (!m_local)
@@ -193,7 +217,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 enet_socket_get_address(m_local->socket, &m_localAddress);
                 m_localAddress.host = ReturnLocalIPv4();
                 Message::Make(MessageType::Info, ToString(m_localAddress)).OnData(SendTo(m_server));
-                Message::Make(MessageType::Login, m_userName).OnData(SendTo(m_server));
+                Message::Make(MessageType::Login, m_userName+":"+m_userData).OnData(SendTo(m_server));
             }
             else
             {
@@ -219,8 +243,8 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             
             if (msg.Type() == MessageType::PlayersActive)
             {
-                auto users = stringSplit(msg.Content(), ',');
-                callbacks.UserList(users);
+
+                callbacks.UserList(ParsePlayerInfo(msg.Content()));
             }
             
             if (msg.Type() == MessageType::Join)
@@ -268,7 +292,6 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 m_startGameInfo->playerNumber = std::stoi(parts[0]);
                 m_startGameInfo->peerName = parts[1];
                 m_startGameInfo->port = m_localAddress.port;
-                m_startGameInfo->yourName = m_userName;
 
                 ENetAddress addr;
                 if (TryParseIPAddress(parts[2], addr))

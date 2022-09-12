@@ -155,8 +155,9 @@ void Connections::BroadcastActiveUsers() const
     auto activeUsers = ActivePlayers();
 
     std::string userList;
+    userList += std::to_string(activeUsers.size())+":";
     for (const auto& u : activeUsers)
-        userList += u->Name() + ",";
+        userList += u->Name() + ":" + std::to_string(u->Data().size())+":"+u->Data();
 
     BroadcastMessage(Message::Make(MessageType::PlayersActive, userList));
     BroadcastOpenGames();

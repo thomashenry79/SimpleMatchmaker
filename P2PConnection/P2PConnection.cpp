@@ -217,7 +217,6 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
                             m_bPrimaryConnectionEstablished = true;
                             Message::Make(MessageType::Info, "PRIMARY").OnData(SendTo(event.peer));
                         }
-                        Message::Make(MessageType::Info, "hello mate my name is " + m_info.yourName).OnData(SendTo(event.peer));
                     }
                     else
                     {

@@ -34,6 +34,7 @@ private:
     std::chrono::steady_clock::time_point lastPing;
 };
 
+
 class P2PConnection
 {
 public:
@@ -64,4 +65,5 @@ private:
     std::function<void(std::string)> m_logger;
     void CleanRedundantConnections();
     PingHandler m_pingHandler;
+    enum class P2PState { Connecting, Connected, Ready};
 };

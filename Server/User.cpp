@@ -31,7 +31,7 @@ void User::SendInfoMessage(const std::string& msg) const{
     Message::Make(MessageType::Info, msg).OnData(SendTo(m_peer));
 }
 
-bool User::TrySetNameAndLogIn(const std::string& name)
+bool User::TrySetNameAndLogIn(const std::string& name, const std::string& userData)
 {
     if (!m_connections->VerifyName(name))
     {
@@ -43,8 +43,8 @@ bool User::TrySetNameAndLogIn(const std::string& name)
         +  "\nyour external IP is " + ToReadableString(m_peer->address) 
         + "\nyour local IP is " + ToReadableString(m_localIP) + "\n");
     m_name = name;
-
-    std::cout << ToReadableString(m_peer->address) << " is called " << m_name << "\n";
+    m_data = userData;
+    std::cout << ToReadableString(m_peer->address) << " is called " << m_name << "user data length " << m_data.size()<< "\n";
     Message::Make(MessageType::Login, m_name).OnData(SendTo(Peer()));
     m_connections->BroadcastMessage(Message::Make(MessageType::Info, "Player connected"));
  

@@ -16,7 +16,6 @@ struct GameStartInfo
     // Which player you are - 1 or 2;
     int playerNumber;
 
-    std::string yourName;
     std::string peerName;
     std::string ToString() const;
 };
@@ -30,6 +29,11 @@ struct GameInfoStruct
     std::vector<std::string> requested;
 };
 
+struct PlayerInfo
+{
+    std::string name;
+    std::string data;
+};
 struct ServerCallbacks
 {
     std::function<void()> Timeout;
@@ -46,7 +50,7 @@ struct ServerCallbacks
     std::function<void()> RemovedFromGame;
 
     // A list of current users connected. Every time this changes, this event is called
-    std::function<void(const std::vector<std::string>&)> UserList;
+    std::function<void(const std::vector<PlayerInfo>&)> UserList;
 
     // A list of current open games. Every time this change, this event is called
     std::function<void(const std::vector<std::string>&)> OpenGames;
@@ -81,13 +85,13 @@ public:
     ServerConnection(std::function<void(const std::string&)> logger);
 
     // Start Connection immediately
-    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID, std::function<void(const std::string&)> logger);
+    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& userData,const std::string& gameID, std::function<void(const std::string&)> logger);
     ~ServerConnection();
     // Call regularly (ie every frame)
     void Update(ServerCallbacks& callbacks);
     
     // Returns false if the already connected or connecting.
-    bool Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& gameID);
+    bool Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& userData,const std::string& gameID);
     bool Disconnect();
     bool RequestToJoinGame(const std::string& gameOwner) const;
     bool LeaveGame() const;
@@ -105,6 +109,7 @@ private:
     uint32_t ReturnLocalIPv4() const;
     std::string m_userName;
     std::string m_gameID;  
+    std::string m_userData;
     ServerConnectionState m_state;
     std::unique_ptr < GameStartInfo > m_startGameInfo = nullptr;
     std::function<void(const std::string&)> m_logger;
