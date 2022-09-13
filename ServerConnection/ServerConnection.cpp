@@ -86,22 +86,23 @@ ServerConnection::ServerConnection(
     const std::string& serverIP,
     int serverPort,
     const std::string& userName,
-    const std::vector<char>& userData,
+    const void* userData, size_t userDataLength,
     const std::string& gameID,
     std::function<void(const std::string&)> logger) :
     ServerConnection(logger)
 {
-    Connect(serverIP, serverPort, userName, userData,gameID);
+    Connect(serverIP, serverPort, userName, userData,userDataLength,gameID);
 }
 
-bool ServerConnection::Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::vector<char>& userData, const std::string& gameID)
+bool ServerConnection::Connect(const std::string& serverIP, int serverPort, const std::string& userName,  const void* userData, size_t userDataLength, const std::string& gameID)
 { 
     if (m_state != ServerConnectionState::Idle)
         return false;
   
     m_startGameInfo = nullptr;
     m_userName = userName;
-    m_userData = userData;
+    auto asChar = (const char*)userData;
+    m_userData.assign(asChar, asChar+ userDataLength);
     ::eraseAndRemove(m_userName, ',');
     ::eraseAndRemove(m_userName, ':');
 

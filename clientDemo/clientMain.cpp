@@ -66,7 +66,7 @@ int main(int argc, char** argv)
     std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << " user data size:" << userBlob.size() <<", hash:" << blobHash%10000 <<"\n";
     EnetInitialiser enetInitGuard;
     auto logger = [](const std::string& s) {std::cout << s; };
-    ServerConnection serverConnection(serverIP, port, name, userBlob,"SimpleTestApp",logger);
+    ServerConnection serverConnection(serverIP, port, name, userBlob.data(),userBlob.size(),"SimpleTestApp",logger);
     std::unique_ptr<P2PConnection> p2pClient(nullptr);
       
 
@@ -255,7 +255,7 @@ int main(int argc, char** argv)
                     else if (c == 'c')
                     {
                       //  std::cout << "pressed connect\n";
-                        if(serverConnection.Connect(serverIP, port, name, userBlob,"SimpleTestApp"))
+                        if(serverConnection.Connect(serverIP, port, name, userBlob.data(),userBlob.size(),"SimpleTestApp"))
                             std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << "\n";
 
                     }

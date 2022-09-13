@@ -90,13 +90,13 @@ public:
     ServerConnection(std::function<void(const std::string&)> logger);
 
     // Start Connection immediately
-    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::vector<char>& userData,const std::string& gameID, std::function<void(const std::string&)> logger);
+    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const void* userData, size_t userDataLength,const std::string& gameID, std::function<void(const std::string&)> logger);
     ~ServerConnection();
     // Call regularly (ie every frame)
     void Update(ServerCallbacks& callbacks);
     
-    // Returns false if the already connected or connecting.
-    bool Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::vector<char>& userData,const std::string& gameID);
+    // Returns false if already connected or connecting.
+    bool Connect(const std::string& serverIP, int serverPort, const std::string& userName, const void* userData,size_t userDataLength, const std::string& gameID);
     bool Disconnect();
     bool RequestToJoinGame(const std::string& gameOwner) const;
     bool LeaveGame() const;
