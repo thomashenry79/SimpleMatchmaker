@@ -25,6 +25,12 @@ target_include_directories(Client PUBLIC "common/include")
 target_include_directories(Client PUBLIC "ServerConnection")
 target_include_directories(Client PUBLIC "P2PConnection")
 
+if(MSVC)
+  add_compile_options(${TARGET_NAME} PRIVATE /W4 /WX)
+else()
+  add_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 if(WIN32)
   target_link_libraries(SimpleMatchmakerServer Winmm ws2_32)
   target_link_libraries(Client Winmm ws2_32)

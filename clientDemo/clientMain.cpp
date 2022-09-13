@@ -41,7 +41,7 @@ std::vector<char> RandomBuffer(int maxSize)
 
 int main(int argc, char** argv)
 {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
     //// general setting
     if (argc < 4) {
          printf("invalid command line parameters\n");
