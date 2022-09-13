@@ -80,6 +80,11 @@ struct ServerCallbacks
 enum class ServerConnectionState;
 class ServerConnection
 {
+    // Can't copy or move
+    ServerConnection(const ServerConnection&) = delete;
+    ServerConnection& operator=(const ServerConnection&) = delete;
+    ServerConnection(const ServerConnection&&) = delete;
+    ServerConnection& operator=(const ServerConnection&&) = delete;
 public:
     // Start Idle
     ServerConnection(std::function<void(const std::string&)> logger);

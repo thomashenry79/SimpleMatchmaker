@@ -37,6 +37,11 @@ private:
 
 class P2PConnection
 {
+    // Can't copy or move
+    P2PConnection(const P2PConnection&) = delete;
+    P2PConnection& operator=(const P2PConnection&) = delete;
+    P2PConnection(const P2PConnection&&) = delete;
+    P2PConnection& operator=(const P2PConnection&&) = delete;
 public:
     P2PConnection(GameStartInfo info,std::function<void(const std::string&)> logger);
     ~P2PConnection();    
