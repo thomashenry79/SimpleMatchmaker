@@ -185,7 +185,7 @@ std::vector<PlayerInfo> ParsePlayerInfo(const void* data, size_t len)
     auto pos = message.find_first_of(':');
     auto numberOfPlayers = std::stoul(message.substr(0, pos++));
 
-    for (int i = 0; i < numberOfPlayers; i++)
+    for (auto i = 0u; i < numberOfPlayers; i++)
     {
         auto next = message.find_first_of(':', pos);
         auto name = message.substr(pos, next - pos);
