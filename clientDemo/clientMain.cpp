@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     // -- enet
    
 
-    std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << " user data size:" << userBlob.size() <<", hash:" << blobHash <<"\n";
+    std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << " user data size:" << userBlob.size() <<", hash:" << blobHash%10000 <<"\n";
     EnetInitialiser enetInitGuard;
     auto logger = [](const std::string& s) {std::cout << s; };
     ServerConnection serverConnection(serverIP, port, name, userBlob,"SimpleTestApp",logger);
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
         std::cout << "Active Users: ";
         for (const auto& u : userNames) {
             auto userDataHash = hash_range(u.data.begin(), u.data.end());
-            std::cout << u.name << "(data hash:" << userDataHash << "), ";
+            std::cout << u.name << "(hash:" << userDataHash % 10000 << "), ";
         }
 
         std::cout << "\n";
