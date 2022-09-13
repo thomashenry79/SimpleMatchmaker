@@ -36,7 +36,11 @@ void WatingForLoginState::ReceiveMessage(const Message& msg)
     if (splitPos != std::string::npos)
     {
         name = content.substr(0, splitPos);
-        userData = content.substr(splitPos + 1);
+        msg.OnPayload([&](const void* buf, size_t len) {
+            auto asChar = (const char*)buf;
+            if (len >= splitPos + 1)
+                userData = std::string(asChar + splitPos + 1, asChar+len);
+        });        
     }
     else
     {

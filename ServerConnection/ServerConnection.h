@@ -32,7 +32,7 @@ struct GameInfoStruct
 struct PlayerInfo
 {
     std::string name;
-    std::string data;
+    std::vector<char> data;
 };
 struct ServerCallbacks
 {
@@ -85,13 +85,13 @@ public:
     ServerConnection(std::function<void(const std::string&)> logger);
 
     // Start Connection immediately
-    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& userData,const std::string& gameID, std::function<void(const std::string&)> logger);
+    ServerConnection(const std::string& serverIP, int serverPort, const std::string& userName, const std::vector<char>& userData,const std::string& gameID, std::function<void(const std::string&)> logger);
     ~ServerConnection();
     // Call regularly (ie every frame)
     void Update(ServerCallbacks& callbacks);
     
     // Returns false if the already connected or connecting.
-    bool Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& userData,const std::string& gameID);
+    bool Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::vector<char>& userData,const std::string& gameID);
     bool Disconnect();
     bool RequestToJoinGame(const std::string& gameOwner) const;
     bool LeaveGame() const;
@@ -109,7 +109,7 @@ private:
     uint32_t ReturnLocalIPv4() const;
     std::string m_userName;
     std::string m_gameID;  
-    std::string m_userData;
+    std::vector<char> m_userData;
     ServerConnectionState m_state;
     std::unique_ptr < GameStartInfo > m_startGameInfo = nullptr;
     std::function<void(const std::string&)> m_logger;

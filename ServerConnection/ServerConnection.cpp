@@ -86,7 +86,7 @@ ServerConnection::ServerConnection(
     const std::string& serverIP,
     int serverPort,
     const std::string& userName,
-    const std::string& userData,
+    const std::vector<char>& userData,
     const std::string& gameID,
     std::function<void(const std::string&)> logger) :
     ServerConnection(logger)
@@ -94,7 +94,7 @@ ServerConnection::ServerConnection(
     Connect(serverIP, serverPort, userName, userData,gameID);
 }
 
-bool ServerConnection::Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::string& userData, const std::string& gameID)
+bool ServerConnection::Connect(const std::string& serverIP, int serverPort, const std::string& userName, const std::vector<char>& userData, const std::string& gameID)
 { 
     if (m_state != ServerConnectionState::Idle)
         return false;
@@ -177,9 +177,10 @@ bool ServerConnection::Disconnect()
 
     return true;
 }
-std::vector<PlayerInfo> ParsePlayerInfo(const std::string& message)
+std::vector<PlayerInfo> ParsePlayerInfo(const void* data, size_t len)
 {
     std::vector<PlayerInfo> info;
+    std::string message((const char*)data, len);
     auto pos = message.find_first_of(':');
     auto numberOfPlayers = std::stoul(message.substr(0, pos++));
 
@@ -192,7 +193,7 @@ std::vector<PlayerInfo> ParsePlayerInfo(const std::string& message)
         auto lengthOfUserData = std::stoul(message.substr(pos, next-pos));
         pos = ++next;
         next = pos + lengthOfUserData;
-        auto data = message.substr(pos, next - pos);
+        std::vector<char> data ((char*)data+pos, (char*)data + next);
         pos = next;
         info.push_back({ name,data });
     }
@@ -217,7 +218,7 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 enet_socket_get_address(m_local->socket, &m_localAddress);
                 m_localAddress.host = ReturnLocalIPv4();
                 Message::Make(MessageType::Info, ToString(m_localAddress)).OnData(SendTo(m_server));
-                Message::Make(MessageType::Login, m_userName+":"+m_userData).OnData(SendTo(m_server));
+                Message::Make(MessageType::Login, m_userName+":"+std::string(m_userData.data(),m_userData.size())).OnData(SendTo(m_server));
             }
             else
             {
@@ -243,8 +244,10 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             
             if (msg.Type() == MessageType::PlayersActive)
             {
-
-                callbacks.UserList(ParsePlayerInfo(msg.Content()));
+                msg.OnPayload([&](const void* data, size_t len) {
+                    auto info = ParsePlayerInfo(data, len);
+                    callbacks.UserList(info);
+                });
             }
             
             if (msg.Type() == MessageType::Join)

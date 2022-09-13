@@ -28,7 +28,15 @@ inline std::size_t hash_range(It first, It last)
 }
 
 
-
+std::vector<char> RandomBuffer(int maxSize)
+{
+    int bufferSize = rand() % maxSize;
+    std::vector<char> buffer(bufferSize);
+    buffer[0] = 0;
+    for (size_t i = 1; i < bufferSize; i++)
+        buffer[i] = rand() % 256;
+    return buffer;
+}
 
 
 int main(int argc, char** argv)
@@ -45,36 +53,35 @@ int main(int argc, char** argv)
    std::string serverIP(argv[2]);
    int port = std::stoi(argv[3]);
 
-   std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << "\n";
+   // Some randome buffer representnig userdata - this can be whatever you want in swos
+   auto userBlob = RandomBuffer(100);
+   // take hash of blob to check that the buffer is correctly received and passed on by the server
+   auto blobHash = hash_range(userBlob.begin(), userBlob.end());
+
+   
     // init
     // -- enet
    
-    std::string userData = std::to_string(rand() % 750 + 500);
+
+    std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << " user data size:" << userBlob.size() <<", hash:" << blobHash <<"\n";
     EnetInitialiser enetInitGuard;
     auto logger = [](const std::string& s) {std::cout << s; };
-    ServerConnection serverConnection(serverIP, port, name, userData,"SimpleTestApp",logger);
+    ServerConnection serverConnection(serverIP, port, name, userBlob,"SimpleTestApp",logger);
     std::unique_ptr<P2PConnection> p2pClient(nullptr);
       
-    std::vector<char> buffer = { 5,5,0,10 };
-    std::string s(buffer.data(), buffer.size());
-    std::vector<char> buffer2(s.begin(),s.end());
-    std::vector<char> buffer3(s.data(), s.data()+s.size());
-    std::vector<char> buffer4(s.data(), s.data() + s.length());
-    buffer2;
+
     // loop
     bool loop = true;
-    int pongs = 0;
-    int loopCount = 0;
-  
-    bool gotPeerDetails = false;
-   
-    bool attemptConnection = false;
+
     std::vector<std::string> openGames;
     std::vector<std::string> requestedJoiners;
     std::vector<std::string> joined;
     
-    ServerCallbacks cbs;
 
+    // ***********************************************************************************************************
+    // Callbacks from the server, react as required in SWOS. In this example we mainly just print 
+    // to console to show the user
+    ServerCallbacks cbs;
     cbs.Connected = []() {std::cout << "Connected to server. Press g to create a game. d to disconnect.\n"; };
     cbs.Disconnected = []() {std::cout << "Disconnected from server\n"; };
     cbs.Timeout = []() {std::cout << "Timeout trying to connect to server\n"; };
@@ -91,8 +98,11 @@ int main(int argc, char** argv)
     cbs.UserList = [](const std::vector<PlayerInfo>& userNames) 
     {
         std::cout << "Active Users: ";
-        for (const auto& u : userNames)
-            std::cout << u.name <<"(data:" << u.data << "), ";
+        for (const auto& u : userNames) {
+            auto userDataHash = hash_range(u.data.begin(), u.data.end());
+            std::cout << u.name << "(data hash:" << userDataHash << "), ";
+        }
+
         std::cout << "\n";
     };
     cbs.ServerMessage = [](const std::string& msg) {std::cout << "Server Message: " << msg << "\n"; };
@@ -133,7 +143,9 @@ int main(int argc, char** argv)
     };
 
 
-
+    //****************************************************************************************************************
+    // Callbacks for the P2P (lobby phase). In this example we respond to usermessage by echoing back the 
+    // hash of the message, so the sender can visually see it's correct
     P2PCallbacks p2pCbs;
     p2pCbs.ReceiveUserMessage = [&](const void* buffer, size_t sz)
     {
@@ -163,6 +175,7 @@ int main(int argc, char** argv)
         std::cout << "P2PConnection closed and game can start, killed p2pClient\n";
         p2pClient = nullptr;
     };
+
     std::string peerDetails;
     while (loop) {    
         serverConnection.Update(cbs);
@@ -211,12 +224,8 @@ int main(int argc, char** argv)
                     }
                     else if (c == 'm')
                     {
-                        int bufferSize = 10 + rand() % 300;
-                        std::vector<char> buffer(bufferSize);
-                        buffer[0] = 0;
-                        for (size_t i = 1; i < bufferSize; i++)
-                            buffer[i] = rand() % 256;
-                        std::cout << "Sending a random user message, length " << bufferSize << " hash: " << hash_range(buffer.begin(), buffer.end())%10000 <<"\n";
+                        auto buffer = RandomBuffer(300);
+                        std::cout << "Sending a random user message, length " << buffer.size() << " hash: " << hash_range(buffer.begin(), buffer.end())%10000 <<"\n";
                         p2pClient->SendUserMessage(buffer.data(),buffer.size());
                     }
                 }
@@ -246,7 +255,7 @@ int main(int argc, char** argv)
                     else if (c == 'c')
                     {
                       //  std::cout << "pressed connect\n";
-                        if(serverConnection.Connect(serverIP, port, name, userData,"SimpleTestApp"))
+                        if(serverConnection.Connect(serverIP, port, name, userBlob,"SimpleTestApp"))
                             std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << "\n";
 
                     }
