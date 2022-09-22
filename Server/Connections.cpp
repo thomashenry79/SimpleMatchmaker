@@ -148,7 +148,7 @@ void Connections::BroadcastMessage(const Message& m) const
 {
     auto activeUsers = AsPeers(ActivePlayers());
     m.OnData(SendTo(activeUsers));
-    m.OnData([](const std::string s) {std::cout << "Broadcast: " << s << "\n"; });
+    std::cout << "Broadcast message: " << (int)m.Type() << "\n";
 }
 void Connections::BroadcastActiveUsers() const
 {
