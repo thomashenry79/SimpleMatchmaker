@@ -6,6 +6,7 @@
 #include <iostream>
 #include "IConnections.h"
 #include "UserChangedStateVisitor.h"
+#include "Utils.h"
 class Message;
 
 struct StateNameVisitor {
