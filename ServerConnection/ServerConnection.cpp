@@ -56,20 +56,32 @@ ServerConnection::~ServerConnection()
 }
 
 
-uint32_t ServerConnection::ReturnLocalIPv4() const{
+std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const{
     char host[256];
-    char* IP;
+   // char* IP;
     struct hostent* host_entry;
+    std::vector<uint32_t> addresses;
     int hostname;
+    int i = 0;
     hostname = gethostname(host, sizeof(host)); //find the host name
-
+    m_logger(std::string("Current Host Name: ") + host + "\n");
     host_entry = gethostbyname(host); //find host information
 
-    auto addr = *((struct in_addr*)host_entry->h_addr_list[0]);
-    IP = inet_ntoa(addr); //Convert into IP string
-    m_logger(std::string("Current Host Name: ")+ host+"\n");
+    if (host_entry->h_addrtype == AF_INET) {
+        while (host_entry->h_addr_list[i] != 0) {
+            auto address = *((struct in_addr*)host_entry->h_addr_list[i++]);
+            printf("\tIPv4 Address #%d: %s\n", i, inet_ntoa(address));
+            addresses.push_back(address.S_un.S_addr);
+        }
+    }
+    else if (host_entry->h_addrtype == AF_INET6)
+        printf("\tRemotehost is an IPv6 address\n");
+
+   // auto address = *((struct in_addr*)host_entry->h_addr_list[0]);
+  //  IP = inet_ntoa(addr); //Convert into IP string
+   
     // printf("Internal IP: %s\n", IP);
-    return addr.S_un.S_addr;
+    return addresses;
 }
 
 
@@ -119,17 +131,17 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
     m_state = ServerConnectionState::Connecting;
 
    
-   
-    m_gameID = gameID;
-    return true;
+
+m_gameID = gameID;
+return true;
 }
 
-bool ServerConnection::RequestToJoinGame(const std::string& gameOwner) const 
+bool ServerConnection::RequestToJoinGame(const std::string& gameOwner) const
 {
     if (m_server)
         Message::Make(MessageType::Join, gameOwner).OnData(SendTo(m_server));
 
-    return true;  
+    return true;
 }
 bool ServerConnection::ApproveJoinRequest(const std::string& player)
 {
@@ -155,14 +167,14 @@ bool ServerConnection::LeaveGame() const
 
 bool ServerConnection::CreateGame() const
 {
-    if(m_server)
+    if (m_server)
         Message::Make(MessageType::Create, "2,2").OnData(SendTo(m_server));
     return true;
 }
 
 bool ServerConnection::StartGame() const
 {
-    if(m_server)
+    if (m_server)
         Message::Make(MessageType::Start, "").OnData(SendTo(m_server));
     return true;
 }
@@ -190,11 +202,11 @@ std::vector<PlayerInfo> ParsePlayerInfo(const void* data, size_t len)
         auto next = message.find_first_of(':', pos);
         auto name = message.substr(pos, next - pos);
         pos = next;
-        next= message.find_first_of(':', ++pos);
-        auto lengthOfUserData = std::stoul(message.substr(pos, next-pos));
+        next = message.find_first_of(':', ++pos);
+        auto lengthOfUserData = std::stoul(message.substr(pos, next - pos));
         pos = ++next;
         next = pos + lengthOfUserData;
-        std::vector<char> data ((char*)data+pos, (char*)data + next);
+        std::vector<char> data((char*)data + pos, (char*)data + next);
         pos = next;
         info.push_back({ name,data });
     }
@@ -208,17 +220,27 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
     while (enet_host_service(m_local.get(), &event, 1) > 0)
     {
         switch (event.type) {
-        case ENET_EVENT_TYPE_CONNECT:        {
-           // std::cout << "connect event, ip:  " << ToReadableString(event.peer->address) << "\n";
+        case ENET_EVENT_TYPE_CONNECT: {
+            // std::cout << "connect event, ip:  " << ToReadableString(event.peer->address) << "\n";
 
             if (event.peer == m_server && m_serverAddress == event.peer->address) {
- 
+
                 m_state = ServerConnectionState::Connected;
                 // Send the details needed to the server
                 Message::Make(MessageType::Version, m_gameID).OnData(SendTo(m_server));
-                enet_socket_get_address(m_local->socket, &m_localAddress);
-                m_localAddress.host = ReturnLocalIPv4();
-                Message::Make(MessageType::Info, ToString(m_localAddress)).OnData(SendTo(m_server));
+                auto localIPs = ReturnLocalIPv4();
+                m_localAddresses.resize(localIPs.size());
+                std::string ipMessage;
+                for (size_t i = 0; i < localIPs.size(); i++)
+                {
+                    enet_socket_get_address(m_local->socket, &m_localAddresses[i]);
+                    m_localAddresses[i].host = localIPs[i];
+                    if (i > 0)
+                        ipMessage += ",";
+                    ipMessage += ToString(m_localAddresses[i]);
+                }
+              
+                Message::Make(MessageType::Info, ipMessage).OnData(SendTo(m_server));
                 Message::Make(MessageType::Login, m_userName+":"+std::string(m_userData.data(),m_userData.size())).OnData(SendTo(m_server));
             }
             else
@@ -295,17 +317,27 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 auto parts = stringSplit(msg.Content(),',');
                 m_startGameInfo->playerNumber = std::stoi(parts[0]);
                 m_startGameInfo->peerName = parts[1];
-                m_startGameInfo->port = m_localAddress.port;
+                ENetAddress temp;
+                enet_socket_get_address(m_local->socket, &temp);
+                m_startGameInfo->port = temp.port;
 
                 ENetAddress addr;
-                if (TryParseIPAddress(parts[2], addr))
+                for (size_t i = 2; i < parts.size(); i++)
+                {
+                    if (TryParseIPAddress(parts[i], addr))
+                    {
+                        if(!contains(m_startGameInfo->peerAddresses,addr))
+                            m_startGameInfo->peerAddresses.push_back(addr);
+                    }
+                }
+                /*if (TryParseIPAddress(parts[2], addr))
                     m_startGameInfo->peerAddresses.push_back(addr);
 
                 if (TryParseIPAddress(parts[3], addr))
                 {
                     if(addr != m_startGameInfo->peerAddresses.back())
                         m_startGameInfo->peerAddresses.push_back(addr);
-                }
+                }*/
 
                 enet_peer_disconnect(m_server,0);
                 break;

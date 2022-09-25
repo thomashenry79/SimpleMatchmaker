@@ -7,7 +7,8 @@ P2PConnection::P2PConnection(GameStartInfo info, std::function<void(const std::s
     localAddress{ ENET_HOST_ANY,info.port },
     local(enet_host_create(&localAddress, info.peerAddresses.size()*2, 0, 0, 0),
         enet_host_destroy),
-    m_logger(logger)
+    m_logger(logger),
+    peerCandidateAddresses(m_info.peerAddresses)
 {
     for(auto& address : m_info.peerAddresses)
         outGoingPeerCandidates.push_back(enet_host_connect(local.get(), &address, 0, 0));
@@ -194,9 +195,9 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
                 m_logger(std::string("connect event, ip: ") + ToReadableString(event.peer->address) + " id: " + std::to_string(event.peer->connectID) + "\n");
 
                 // If the incoming connection is from the candidate list, accept it and clear the candidate list
-                if(contains(m_info.peerAddresses,event.peer->address))
+                if(contains(peerCandidateAddresses,event.peer->address))
                 {
-                    eraseAndRemoveIfNot(m_info.peerAddresses, event.peer->address);
+                    eraseAndRemoveIfNot(peerCandidateAddresses, event.peer->address);
                     m_logger("Connected to a Peer \n");
                  
                     peerConnections.push_back(event.peer);
@@ -225,7 +226,12 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
                 }
                 else
                 {
-                    m_logger(std::string("Incoming connection from unexpected peer: ") + ToReadableString(event.peer->address) + " bin it\n");
+                    if(contains(m_info.peerAddresses, event.peer->address))
+                    {
+                        m_logger(std::string("Incoming connection was from a potential candidate that we no longer want to use: ") + ToReadableString(event.peer->address) + " bin it\n");
+                    }
+                    else
+                        m_logger(std::string("Incoming connection from unexpected peer: ") + ToReadableString(event.peer->address) + " bin it\n");
                     enet_peer_reset(event.peer);
                 }
                 Info();

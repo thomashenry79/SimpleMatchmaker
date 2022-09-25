@@ -43,15 +43,15 @@ int main(int argc, char** argv)
 {
     srand((unsigned int)time(NULL));
     //// general setting
-    if (argc < 4) {
+    if (argc < 2) {
          printf("invalid command line parameters\n");
-         printf("usage: Client <name> <ServerIP> <SeverPort>\n");
+         printf("usage: Client <name>\n");
          return 0;
      }
     // set ip address and port    
    std::string name(argv[1]);
-   std::string serverIP(argv[2]);
-   int port = std::stoi(argv[3]);
+   std::string serverIP(argc >2 ? argv[2] : "77.68.32.246");
+   int port = 19602;// std::stoi(argv[3]);
 
    // Some randome buffer representnig userdata - this can be whatever you want in swos
    auto userBlob = RandomBuffer(100);
@@ -149,7 +149,11 @@ int main(int argc, char** argv)
     P2PCallbacks p2pCbs;
     p2pCbs.ReceiveUserMessage = [&](const void* buffer, size_t sz)
     {
-        auto buf = (const char*)buffer;
+        size_t hsh = hash_range((const char*)buffer, (const char*)buffer + sz);
+        std::string msg((const char*)buffer, sz);
+        std::cout << "Received User Message, length " << sz << " hash: " << hsh % 10000 << "\n";
+        std::cout << "Message as string:\n" << msg<<"\n";
+       /* auto buf = (const char*)buffer;
         if (buf[0] == 0)
         {
             size_t hsh = hash_range((const char*)buffer, (const char*)buffer + sz);
@@ -164,7 +168,7 @@ int main(int argc, char** argv)
         {
             size_t* hsh = (size_t*)&buf[1];
             std::cout << "Received acknowledgement, peer thinks hash was " << (*hsh) % 10000 << "\n";
-        }
+        }*/
     };
 
 
@@ -178,6 +182,7 @@ int main(int argc, char** argv)
 
     std::string peerDetails;
     while (loop) {    
+        Sleep(2);
         serverConnection.Update(cbs);
         if (p2pClient)
         {

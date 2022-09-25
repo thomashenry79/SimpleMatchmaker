@@ -107,11 +107,11 @@ public:
    // bool IsConnected() const;
 
 private:
-    ENetAddress m_localAddress{ 0,0 };
+    std::vector<ENetAddress> m_localAddresses;
     ENetHostPtr m_local;
     ENetAddress m_serverAddress{ 0,0 };
     ENetPeer* m_server=nullptr;
-    uint32_t ReturnLocalIPv4() const;
+    std::vector<uint32_t> ReturnLocalIPv4() const;
     std::string m_userName;
     std::string m_gameID;  
     std::vector<char> m_userData;

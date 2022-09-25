@@ -12,6 +12,7 @@ struct P2PCallbacks
 {
     std::function<void()> Connected;
     std::function<void()> Disconncted;
+  // std::function<void()> 
     std::function<void()> PlayerReady;
     std::function<void()> StartGame;
     std::function<void(const void*,size_t)> ReceiveUserMessage;
@@ -53,9 +54,10 @@ public:
     double GetPing() const;
     void SendUserMessage(char* buffer, size_t length);
 private:
-    GameStartInfo m_info;
-    ENetAddress localAddress{ 0,0 };
+    const GameStartInfo m_info;
+    const ENetAddress localAddress;
     ENetHostPtr local;
+    std::vector<ENetAddress> peerCandidateAddresses;
     std::vector<ENetPeer*> outGoingPeerCandidates;
     std::vector<ENetPeer*> peerConnections;
     bool m_bMeReady=false;

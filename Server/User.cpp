@@ -38,10 +38,17 @@ bool User::TrySetNameAndLogIn(const std::string& name, const std::string& userDa
         DisconnectUser("Username already in use");
         return false;
     }
-
-    SendInfoMessage("User logged in ok, your name is " + name 
-        +  "\nyour external IP is " + ToReadableString(m_peer->address) 
-        + "\nyour local IP is " + ToReadableString(m_localIP) + "\n");
+    std::string msg = std::string("User logged in ok, your name is ") + name
+        + "\nyour external IP is " + ToReadableString(m_peer->address);
+    if(m_localIPs.size()==1)
+        msg += "\nyour local IP is " + ToReadableString(m_localIPs[0]) + "\n";
+    else
+    {
+        msg += "\nyour local IPs are ";
+        for(auto ip : m_localIPs)
+            msg + ToReadableString(ip) + "\n";
+    }
+    SendInfoMessage(msg);
     m_name = name;
     m_data = userData;
     std::cout << ToReadableString(m_peer->address) << " is called " << m_name << "user data length " << m_data.size()<< "\n";
@@ -54,7 +61,16 @@ bool User::TrySetNameAndLogIn(const std::string& name, const std::string& userDa
 
 bool User::TrySetLocaIPAddress(const std::string& data)
 {
-    return TryParseIPAddress(data, m_localIP);
+    bool ok = true;
+    auto strings = stringSplit(data, ',');
+    std::cout << "User has " << strings.size() << " local IP address(es): ";
+    m_localIPs.resize(strings.size());
+    for (int i = 0; i < strings.size(); i++) {
+        ok &= TryParseIPAddress(strings[i], m_localIPs[i]);
+        std::cout << ToReadableString(m_localIPs[i]) << ", ";
+    }
+    std::cout << "\n";
+    return ok;
 }
 
 bool User::TrySetVersion(const std::string& version)
