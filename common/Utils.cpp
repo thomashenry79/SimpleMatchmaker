@@ -18,6 +18,13 @@ std::string ToReadableString(const ENetAddress& addr)
     enet_address_get_host_ip(&addr, fromIP, 40);
     return std::string(fromIP) + ":" + std::to_string(addr.port);
 }
+
+std::string ToReadableIPv4String(const ENetAddress& addr)
+{
+    char fromIP[40];
+    enet_address_get_host_ip(&addr, fromIP, 40);
+    return std::string(fromIP);
+}
 bool TryParseIPAddressList(const std::string& msg, std::vector<ENetAddress>& results)
 {
     auto strings = stringSplit(msg, ',');

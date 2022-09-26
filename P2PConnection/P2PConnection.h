@@ -8,13 +8,22 @@
 #include "ServerConnection.h"
 #include <chrono>
 
+struct GGPOStartInfo
+{
+      int yourPlayerNumber; // 1 or 2;
+
+    uint16_t yourPort;
+    uint16_t opponentPort;
+    std::string opponentIP;
+};
+
 struct P2PCallbacks
 {
     std::function<void()> Connected;
     std::function<void()> Disconncted;
-  // std::function<void()> 
-    std::function<void()> PlayerReady;
-    std::function<void()> StartGame;
+    std::function<void()> Timeout;
+    std::function<void()> ReadyStatusChanged; // true - ready, false - not ready
+    std::function<void(const GGPOStartInfo&)> StartGame; // Ready to start game
     std::function<void(const void*,size_t)> ReceiveUserMessage;
 };
 
@@ -26,9 +35,9 @@ public:
     void OnPong();
     double GetPing() const { return m_pingEMA; }
 private:
-    // Exponential moving average, taken twice a second, over the last 15 seconds
+    // Exponential moving average, taken twice a second, over the last 8 seconds
     double m_pingEMA = 0;
-    const int emaPeriodMS = 15 * 1000;
+    const int emaPeriodMS = 8 * 1000;
     const int pingPeriodMS = 500;
     const double EMA_Constant = 2 / (1.0 + (emaPeriodMS / pingPeriodMS));
     unsigned int m_bPingSent =false;
@@ -46,13 +55,13 @@ class P2PConnection
 public:
     P2PConnection(GameStartInfo info,std::function<void(const std::string&)> logger);
     ~P2PConnection();    
-    void SendReady();
-    void Update(P2PCallbacks& callbacks);
-    bool ReadyToStart() const;
-    void Info();
-    void SendStart();
+    void ToggleReady();
+    void Update(P2PCallbacks& callbacks);    
+    void TryStart();
     double GetPing() const;
     void SendUserMessage(char* buffer, size_t length);
+    bool ImReady()const { return m_bMeReady; }
+    bool OtherReady() const { return m_bOtherReady; }
 private:
     const GameStartInfo m_info;
     const ENetAddress localAddress;
@@ -62,9 +71,13 @@ private:
     std::vector<ENetPeer*> peerConnections;
     bool m_bMeReady=false;
     bool m_bOtherReady=false;
+    bool m_TryStart = false;
     bool m_Start = false;
+    bool CanSend()const;
     void OnReadyChange();
-    
+    bool ReadyToStart() const;
+     void Info();
+    ENetAddress m_PrimaryConnection;
     bool m_bPrimaryConnectionEstablished = false;
     size_t TotalActivePeers() const {
         return outGoingPeerCandidates.size() + peerConnections.size();

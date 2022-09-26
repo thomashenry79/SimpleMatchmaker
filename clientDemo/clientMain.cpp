@@ -171,14 +171,20 @@ int main(int argc, char** argv)
         }*/
     };
 
+    p2pCbs.Connected = []() { std::cout << "P2PCallback:*********** Connection established ******\n"; };
+    p2pCbs.Disconncted = [&]() { std::cout << "P2PCallback:*********** Connection lost ******\n"; p2pClient = nullptr; };
+    p2pCbs.Timeout = [&]() { std::cout << "P2PCallback:*********** Connection attempt timed out ******\n"; p2pClient = nullptr; };
+    p2pCbs.ReadyStatusChanged = []() {std::cout << "P2PCallback:************** Other player changed ready status\n"; };
+    p2pCbs.StartGame = [&](const GGPOStartInfo& info) {
+        std::cout << "P2PCallback:************** Ready to start GGPO Session as player " << info.yourPlayerNumber <<"\n";
+        std::cout << "Use local port: " << info.yourPort<< ", ";
+        std::cout << "Connect to opponent at " << info.opponentIP << ", port: " << info.opponentPort << "\n";
+       
+        p2pClient = nullptr;
+        std::cout << "P2PConnection closed and game can start, killed p2pClient\n";
+    };
 
    
-
-    auto onStart = [&]()
-    {
-        std::cout << "P2PConnection closed and game can start, killed p2pClient\n";
-        p2pClient = nullptr;
-    };
 
     std::string peerDetails;
     while (loop) {    
@@ -187,8 +193,6 @@ int main(int argc, char** argv)
         if (p2pClient)
         {
             p2pClient->Update(p2pCbs);
-            if (p2pClient->ReadyToStart())
-                onStart();
         }
         // Some basic UI
             // send packet
@@ -213,19 +217,15 @@ int main(int argc, char** argv)
                     }
                     else if (c == 'r')
                     {
-                        p2pClient->SendReady();
+                        p2pClient->ToggleReady();
                     }
                     else if (c == 'l')
                     {
                         p2pClient = nullptr;
-                    }
-                    else if (c == 'i')
-                    {
-                        p2pClient->Info();
-                    }
+                    }                   
                     else if (c == 's')
                     {
-                        p2pClient->SendStart();
+                        p2pClient->TryStart();
                     }
                     else if (c == 'm')
                     {

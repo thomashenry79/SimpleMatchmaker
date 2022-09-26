@@ -30,7 +30,7 @@ P2PConnection::~P2PConnection()
     }
 }
 
-void P2PConnection::SendStart()
+void P2PConnection::TryStart()
 {
     if (m_info.playerNumber != 1) {
         m_logger("Only player 1 can start the game\n");
@@ -46,6 +46,11 @@ void P2PConnection::SendStart()
         m_logger("Already initiated Start process\n");
         return;
     }
+    if (m_TryStart)
+    {
+        m_logger("Already initiated TryStart process\n");
+        return;
+    }
     if (!peerConnections.size())
     {
         m_logger("No peer connection\n");
@@ -57,23 +62,27 @@ void P2PConnection::SendStart()
         return;
     }
     
+   
+     m_TryStart = true;
+     m_logger("Initiating Start process: Send Start message, wait for commit, then disconnect\n");
+     Sleep(2000);
      Message::Make(MessageType::Info, "Start").OnData(SendTo(peerConnections[0]));
-     m_Start = true;
-     m_logger("Initiating Start process: Sent Start message, then disconnect\n");
-     for(auto& peer : peerConnections)
-         enet_peer_disconnect_later(peer, 0);
+   
     
 }
 
-void P2PConnection::SendReady()
+void P2PConnection::ToggleReady()
 {
-    if (m_bMeReady)
+    if (m_Start || m_TryStart) {
+        m_logger("Cannot change ready status now that start process has begun\n");
         return;
+    }
+
+    m_bMeReady = !m_bMeReady;
 
     if (peerConnections.size())
     {
-        Message::Make(MessageType::Info, "Ready").OnData(SendTo(peerConnections[0]));
-        m_bMeReady = true;
+        Message::Make(MessageType::Ready, m_bMeReady ? "1" : "0").OnData(SendTo(peerConnections[0]));
         OnReadyChange();
     }
 }
@@ -92,7 +101,13 @@ void P2PConnection::OnReadyChange()
 
     if (m_bMeReady && m_bOtherReady)
         m_logger(m_info.playerNumber == 1 ? "Press S to start game\n" : "Waiting for player 1 to start game\n");
-        
+    else
+    {
+        if(m_TryStart)
+            m_logger("Abort start\n");
+        m_Start = false;
+        m_TryStart = false;
+    }        
 }
 bool P2PConnection::ReadyToStart() const
 {
@@ -177,160 +192,215 @@ double P2PConnection::GetPing() const
 
 void P2PConnection::SendUserMessage(char* buffer, size_t length)
 {
-    if (m_bPrimaryConnectionEstablished && peerConnections.size() == 1)
+    if (CanSend())
         Message::Make(MessageType::UserMessage, std::string(buffer,length)).OnData(SendTo(peerConnections[0]));
+}
+
+bool P2PConnection::CanSend() const
+{
+    if (m_bMeReady)
+        return false;
+    if (m_Start)
+        return false;
+    if (m_TryStart)
+        return false;
+    if (!m_bPrimaryConnectionEstablished)
+        return false;
+    if (peerConnections.size() != 1)
+        return false;
+    return true;
 }
 void P2PConnection::Update(P2PCallbacks& callbacks)
 {
     ENetEvent event;
     CleanRedundantConnections();
-    if (m_bPrimaryConnectionEstablished && peerConnections.size() == 1)
+    if (CanSend())
         m_pingHandler.Update(peerConnections[0]);
 
     while (enet_host_service(local.get(), &event, 1) > 0)
+    {
+        switch (event.type) {
+        case ENET_EVENT_TYPE_CONNECT:
         {
-            switch (event.type) {
-            case ENET_EVENT_TYPE_CONNECT:
+            m_logger(std::string("connect event, ip: ") + ToReadableString(event.peer->address) + " id: " + std::to_string(event.peer->connectID) + "\n");
+
+            // If the incoming connection is from the candidate list, accept it and clear the candidate list
+            if (contains(peerCandidateAddresses, event.peer->address))
             {
-                m_logger(std::string("connect event, ip: ") + ToReadableString(event.peer->address) + " id: " + std::to_string(event.peer->connectID) + "\n");
+                eraseAndRemoveIfNot(peerCandidateAddresses, event.peer->address);
+                m_logger("Connected to a Peer \n");
 
-                // If the incoming connection is from the candidate list, accept it and clear the candidate list
-                if(contains(peerCandidateAddresses,event.peer->address))
+                peerConnections.push_back(event.peer);
+
+                if (contains(outGoingPeerCandidates, event.peer)) {
+                    eraseAndRemove(outGoingPeerCandidates, event.peer);
+                    m_logger("Peer was in our candidate list: we connected to them\n");
+                }
+                else
+                    m_logger("Peer was not in our outgoing list: they connected to us\n");
+
+                // Is this the first connection?
+                if (peerConnections.size() == 1)
                 {
-                    eraseAndRemoveIfNot(peerCandidateAddresses, event.peer->address);
-                    m_logger("Connected to a Peer \n");
-                 
-                    peerConnections.push_back(event.peer);
-
-                    if (contains(outGoingPeerCandidates, event.peer)) {
-                        eraseAndRemove(outGoingPeerCandidates, event.peer);
-                        m_logger("Peer was in our candidate list: we connected to them\n");
-                    }
-                    else
-                        m_logger("Peer was not in our outgoing list: they connected to us\n");
-
-                    // Is this the first connection?
-                    if (peerConnections.size() == 1)
-                    {   
-                        // If we are player1, we tell the other player to use this connction as the primary one
-                        if (m_info.playerNumber == 1)
-                        {
-                            m_bPrimaryConnectionEstablished = true;
-                            Message::Make(MessageType::Info, "PRIMARY").OnData(SendTo(event.peer));
-                        }
-                    }
-                    else
+                    // If we are player1, we tell the other player to use this connction as the primary one
+                    if (m_info.playerNumber == 1)
                     {
-                        m_logger("Redundant connection established\n");
+                        callbacks.Connected();
+                        m_bPrimaryConnectionEstablished = true;
+                        m_PrimaryConnection = peerConnections[0]->address;;
+                        Message::Make(MessageType::Info, "PRIMARY").OnData(SendTo(event.peer));
                     }
                 }
                 else
                 {
-                    if(contains(m_info.peerAddresses, event.peer->address))
+                    m_logger("Redundant connection established\n");
+                }
+            }
+            else
+            {
+                if (contains(m_info.peerAddresses, event.peer->address))
+                {
+                    m_logger(std::string("Incoming connection was from a potential candidate that we no longer want to use: ") + ToReadableString(event.peer->address) + " bin it\n");
+                }
+                else
+                    m_logger(std::string("Incoming connection from unexpected peer: ") + ToReadableString(event.peer->address) + " bin it\n");
+                enet_peer_reset(event.peer);
+            }
+            Info();
+            break;
+        }
+        case ENET_EVENT_TYPE_RECEIVE:
+        {
+            EnetPacketRAIIGuard guard(event.packet);
+
+
+            auto msg = Message::Parse(event.packet->data, event.packet->dataLength);
+
+            if (msg.Type() == MessageType::UserMessage)
+            {
+                msg.OnPayload(callbacks.ReceiveUserMessage);
+            }
+            else if (msg.Type() == MessageType::Ready)
+            {
+                m_bOtherReady = std::stoi(msg.Content());
+                OnReadyChange();
+                callbacks.ReadyStatusChanged();
+            }
+            else if (msg.Type() == MessageType::Info)
+            {
+                if (strcmp(msg.Content(), "Ping") != 0 && strcmp(msg.Content(), "Pong"))
+                {
+                    m_logger("We received a message: ");
+                    msg.ToConsole();
+                }
+
+                if (!strcmp(msg.Content(), "PRIMARY"))
+                {
+                    m_bPrimaryConnectionEstablished = true;
+                    if (peerConnections.size() && (peerConnections[0] == event.peer))
                     {
-                        m_logger(std::string("Incoming connection was from a potential candidate that we no longer want to use: ") + ToReadableString(event.peer->address) + " bin it\n");
+                        m_logger("Agree with player 1 on primary connection\n");
                     }
                     else
-                        m_logger(std::string("Incoming connection from unexpected peer: ") + ToReadableString(event.peer->address) + " bin it\n");
-                    enet_peer_reset(event.peer);
-                }
-                Info();
-                break;
-            }
-            case ENET_EVENT_TYPE_RECEIVE:
-            {
-                EnetPacketRAIIGuard guard(event.packet);
-                
-
-                auto msg = Message::Parse(event.packet->data, event.packet->dataLength);                  
-               
-                if (msg.Type() == MessageType::UserMessage)
-                {
-                    msg.OnPayload(callbacks.ReceiveUserMessage);
-                }
-                else if (msg.Type() == MessageType::Info)
-                {
-                    if (strcmp(msg.Content(), "Ping") != 0 && strcmp(msg.Content(), "Pong"))
                     {
-                        m_logger("We received a message: ");
-                        msg.ToConsole();
-                    }
-
-                    if (!strcmp(msg.Content(), "PRIMARY"))
-                    {
-                        m_bPrimaryConnectionEstablished = true;
-                        if (peerConnections.size() && (peerConnections[0] == event.peer))
-                        {
-                            m_logger("Agree with player 1 on primary connection\n");
-                        }
-                        else 
-                        {
-                            auto it = std::find(RANGE(peerConnections), event.peer);
-                            if (it == peerConnections.end())
-                                m_logger("Player 1's primary connection is not even present for us.. this should never happen\n");
-                            else
-                            {
-                                std::iter_swap(peerConnections.begin(), it);
-                                m_logger("Did't agree with player 1 on primary connection, swapped ours to match.\n");
-                            }
-                        }
-                    }
-                    if(!strcmp(msg.Content(),"Ping"))
-                        Message::Make(MessageType::Info, "Pong").OnData(SendTo(event.peer));
-                    
-                    if (!strcmp(msg.Content(), "Pong"))
-                    {
-                        m_pingHandler.OnPong();
-                    }
-                    if (!strcmp(msg.Content(), "Start"))
-                    {
-                        if(m_Start)
-                            m_logger("Other player sent duplicate Start message\n");
+                        auto it = std::find(RANGE(peerConnections), event.peer);
+                        if (it == peerConnections.end())
+                            m_logger("Player 1's primary connection is not even present for us.. this should never happen\n");
                         else
                         {
-                            m_Start = true;
-                            m_logger("Other player intiated Start Process, expect disconnect soon\n");
+                            std::iter_swap(peerConnections.begin(), it);
+                            m_logger("Did't agree with player 1 on primary connection, swapped ours to match.\n");
                         }
                     }
-                    if (!strcmp(msg.Content(), "Ready"))
+                    m_PrimaryConnection = peerConnections[0]->address;
+                    callbacks.Connected();
+                }
+                if (!strcmp(msg.Content(), "Ping"))
+                    Message::Make(MessageType::Info, "Pong").OnData(SendTo(event.peer));
+
+                if (!strcmp(msg.Content(), "Pong"))
+                {
+                    if(CanSend())
+                        m_pingHandler.OnPong();
+                }
+                if (!strcmp(msg.Content(), "Start"))
+                {
+                    // If we are player 1, this is a response from player 2 saying that they are committed to the start - so are we!
+                    // Let's begin the disconnection process
+                    if (m_TryStart)
                     {
-                        m_bOtherReady = true;
-                        OnReadyChange();
+                        m_logger("Start confirmation from player 2, disconnect now\n");
+                        m_Start = true;
+                        for (auto& peer : peerConnections)
+                            enet_peer_disconnect_later(peer, 0);
+                    }
+                    else
+                    {                        
+                        if (m_bMeReady && m_bOtherReady)
+                        {
+                            m_logger("Start initiated from player 1, we confirm, wait for disconnect\n");
+                            // If we are player 2, and we can start, send a response to confirm, then wait for diconnection
+                            m_Start = true;
+                            Message::Make(MessageType::Info, "Start").OnData(SendTo(peerConnections[0]));
+                        }
+                        else
+                        {
+                            m_logger("Start initiated from player 1, we cannot proceed\n");
+                        }
                     }
                 }
 
-                break;
             }
-            case ENET_EVENT_TYPE_DISCONNECT:
-            {
-                m_logger(std::string("disconnect event ip ") + ToReadableString(event.peer->address) + "\n");
-                if (contains(peerConnections,event.peer))
-                {
-                    if(event.peer== peerConnections[0])
-                        m_logger(std::string("We Disconnected from primary connection: ")+ ToReadableString(event.peer->address) + "\n");
-                    else
-                        m_logger(std::string("We Disconnected from redundant connection: ") + ToReadableString(event.peer->address) + "\n");
-                    eraseAndRemove(peerConnections, event.peer);
-                }
-                else if (contains(outGoingPeerCandidates, event.peer))
-                {
-                    m_logger(std::string("Abort connection attempt to ") + ToReadableString(event.peer->address) + "\n");
-                    eraseAndRemove(outGoingPeerCandidates, event.peer);
-                }
-                else
-                {
-                    m_logger("Disconnect from unknown\n");
-                }
-                Info();
-                if (ReadyToStart())
-                {
-                    // We don't do anything after this                
-                    m_logger("All connections closed, Start is set, let's go!!!\n");
-                }
-               
-                break;
-            }
-            }
+
+            break;
         }
+        case ENET_EVENT_TYPE_DISCONNECT:
+        {
+            m_logger(std::string("disconnect event ip ") + ToReadableString(event.peer->address) + "\n");
+            if (contains(peerConnections, event.peer))
+            {
+                if (event.peer == peerConnections[0])
+                    m_logger(std::string("We Disconnected from primary connection: ") + ToReadableString(event.peer->address) + "\n");
+                else
+                    m_logger(std::string("We Disconnected from redundant connection: ") + ToReadableString(event.peer->address) + "\n");
+                eraseAndRemove(peerConnections, event.peer);
+            }
+            else if (contains(outGoingPeerCandidates, event.peer))
+            {
+                m_logger(std::string("Abort connection attempt to ") + ToReadableString(event.peer->address) + "\n");
+                eraseAndRemove(outGoingPeerCandidates, event.peer);
+            }
+            else
+            {
+                m_logger("Disconnect from unknown\n");
+            }
+            Info();
+            if (ReadyToStart())
+            {
+                // We don't do anything after this, so it's ok to delete this object in the callback                
+                m_logger("All connections closed, Start is set, let's go!!!\n");
+                GGPOStartInfo info;
+                info.opponentIP = ToReadableIPv4String(m_PrimaryConnection);
+                info.opponentPort = m_PrimaryConnection.port;
+                info.yourPlayerNumber = m_info.playerNumber;
+                info.yourPort = m_info.port;
+                callbacks.StartGame(info);
+                return;
+            }
+            else if (peerConnections.size() == 0 && outGoingPeerCandidates.size() == 0)
+            {
+                if (m_bPrimaryConnectionEstablished)
+                    callbacks.Disconncted();
+                else
+                    callbacks.Timeout();
+                return;
+
+            }
+
+            break;
+        }
+
+        }
+    }
 }
 
