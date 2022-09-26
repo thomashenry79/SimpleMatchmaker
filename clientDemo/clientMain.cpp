@@ -182,7 +182,7 @@ int main(int argc, char** argv)
 
     std::string peerDetails;
     while (loop) {    
-        Sleep(2);
+        Sleep(1);
         serverConnection.Update(cbs);
         if (p2pClient)
         {
