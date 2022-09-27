@@ -60,6 +60,7 @@ ServerConnection::~ServerConnection()
 #ifdef _WIN32
 std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
 {
+    printf("Discocer local IPv4 addresses\n");
     std::vector<uint32_t> addresses;
     IP_ADAPTER_ADDRESSES* adapter_addresses(NULL);
     IP_ADAPTER_ADDRESSES* adapter(NULL);
@@ -101,8 +102,7 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
         // Skip loopback adapters
         if (IF_TYPE_SOFTWARE_LOOPBACK == adapter->IfType) continue;
 
-        printf("[ADAPTER]: %S\n", adapter->Description);
-        printf("[NAME]:    %S\n", adapter->FriendlyName);
+      
 
         // Parse all IPv4 addresses
         for (IP_ADAPTER_UNICAST_ADDRESS* address = adapter->FirstUnicastAddress; NULL != address; address = address->Next) {
@@ -111,23 +111,23 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
                 SOCKADDR_IN* ipv4 = reinterpret_cast<SOCKADDR_IN*>(address->Address.lpSockaddr);
                 char str_buffer[16] = { 0 };
                 inet_ntop(AF_INET, &(ipv4->sin_addr), str_buffer, 16);
-                auto num = ipv4->sin_addr.S_un.S_addr;
-                printf("[IP]:      %s,%d\n", str_buffer, num);
-
                 if (strncmp("169.254", str_buffer, strlen("169.254")) == 0)
                 {
-                    printf("ignore this one\n");
                     continue;
                 }
                 if (strncmp("127.0.0.1", str_buffer, strlen("127.0.0.1")) == 0)
                 {
-                    printf("ignore this one\n");
                     continue;
                 }
+                auto num = ipv4->sin_addr.S_un.S_addr;
+                printf("[ADAPTER]: %S\n", adapter->Description);
+                printf("[NAME]:    %S\n", adapter->FriendlyName);
+                printf("[IP]:      %s,%d\n", str_buffer, num);
+                printf("\n");
+               
                 addresses.push_back(num);
             }
         }
-        printf("\n");
     }
 
     free(adapter_addresses);
