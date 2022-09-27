@@ -1,6 +1,8 @@
 #include "P2PConnection.h"
 #include "Message.h"
 #include "Sender.h"
+#include <chrono>
+#include <string.h>
 using namespace std::chrono;
 P2PConnection::P2PConnection(GameStartInfo info, std::function<void(const std::string&)> logger) :
     m_info(info),
@@ -144,9 +146,8 @@ void P2PConnection::CleanRedundantConnections()
 }
 
 
-PingHandler::PingHandler() : lastPing(high_resolution_clock::now())
+PingHandler::PingHandler() : lastPing(steady_clock::now())
 {
-
 }
 
 void PingHandler::Update(ENetPeer* peerToPing)
@@ -157,7 +158,7 @@ void PingHandler::Update(ENetPeer* peerToPing)
     if (!peerToPing)
         return;
 
-    auto now = high_resolution_clock::now();
+    auto now = steady_clock::now();
     auto timeSinceLastPing = (int)duration_cast<milliseconds>(now - lastPing).count();
     if (timeSinceLastPing >= pingPeriodMS)
     {
@@ -169,8 +170,7 @@ void PingHandler::Update(ENetPeer* peerToPing)
 //#include <iostream>
 void PingHandler::OnPong()
 {
-    auto now = high_resolution_clock::now();
-    auto thisPing = (double)duration_cast<microseconds>(now - lastPing).count();
+    auto thisPing = (double)duration_cast<microseconds>(steady_clock::now() - lastPing).count();
     
     //ignore silly big pings, these are probablt not representative
     if (thisPing > 2 *1e6)

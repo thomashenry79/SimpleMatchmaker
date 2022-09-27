@@ -4,10 +4,16 @@
 #include "Message.h"
 #include "Sender.h"
 #include <algorithm>
+
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #include <IPTypes.h>
 #include <iphlpapi.h>
+#else
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <cstring>
 #endif
 GameInfoStruct::GameInfoStruct(const std::string& msg)
 {
@@ -126,31 +132,70 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
 }
 #else
 std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const{
-    ListIpAddresses();
-    char host[256];
-   // char* IP;
-    struct hostent* host_entry;
-    std::vector<uint32_t> addresses;
-    int hostname;
-    int i = 0;
-    hostname = gethostname(host, sizeof(host)); //find the host name
-    m_logger(std::string("Current Host Name: ") + host + "\n");
-    host_entry = gethostbyname(host); //find host information
+  std::vector<uint32_t> addresses;
 
-    if (host_entry->h_addrtype == AF_INET) {
-        while (host_entry->h_addr_list[i] != 0) {
-            auto address = *((struct in_addr*)host_entry->h_addr_list[i++]);
-            printf("\tIPv4 Address #%d: %s\n", i, inet_ntoa(address));
-            addresses.push_back(address.S_un.S_addr);
-        }
-    }
-    else if (host_entry->h_addrtype == AF_INET6)
-        printf("\tRemotehost is an IPv6 address\n");
 
-   // auto address = *((struct in_addr*)host_entry->h_addr_list[0]);
-  //  IP = inet_ntoa(addr); //Convert into IP string
-   
-    // printf("Internal IP: %s\n", IP);
+  struct ifaddrs* myaddrs, * ifa;
+  void* in_addr;
+  char buf[64];
+
+  if (getifaddrs(&myaddrs) != 0)
+  {
+      perror("getifaddrs");
+      exit(1);
+  }
+
+  for (ifa = myaddrs; ifa != NULL; ifa = ifa->ifa_next)
+  {
+      if (ifa->ifa_addr == NULL)
+          continue;
+      if (!(ifa->ifa_flags & IFF_UP))
+          continue;
+
+      switch (ifa->ifa_addr->sa_family)
+      {
+      case AF_INET:
+      {
+          struct sockaddr_in* s4 = (struct sockaddr_in*)ifa->ifa_addr;
+          in_addr = &s4->sin_addr;
+          char str_buffer[16] = { 0 };
+          inet_ntop(AF_INET, (in_addr), str_buffer, 16);
+          if (strncmp("127", str_buffer, strlen("127")) == 0)
+          {
+              continue;
+          }
+          auto num = s4->sin_addr.s_addr;
+          printf("[IP]:      %s,%d\n", str_buffer, num);
+          addresses.push_back(num);
+          break;
+      }
+
+      case AF_INET6:
+      {
+          struct sockaddr_in6* s6 = (struct sockaddr_in6*)ifa->ifa_addr;
+          in_addr = &s6->sin6_addr;
+          char str_buffer[128] = { 0 };
+          inet_ntop(AF_INET6, (in_addr), str_buffer, 128);
+          printf("[IP6 (ignore):      %s\n", str_buffer);
+          break;
+      }
+
+      default:
+          continue;
+      }
+
+      if (!inet_ntop(ifa->ifa_addr->sa_family, in_addr, buf, sizeof(buf)))
+      {
+          printf("%s: inet_ntop failed!\n", ifa->ifa_name);
+      }
+      else
+      {
+          printf("%s: %s\n", ifa->ifa_name, buf);
+      }
+  }
+
+  freeifaddrs(myaddrs);
+
     return addresses;
 }
 #endif
@@ -196,7 +241,8 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
         return false;
 
     m_local = ENetHostPtr(enet_host_create(nullptr, 1, 0, 0, 0), enet_host_destroy);  
-
+    if (!m_local)
+        return false;
  
 
     enet_address_set_host_ip(&m_serverAddress, serverIP.c_str());
@@ -206,8 +252,8 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
 
    
 
-m_gameID = gameID;
-return true;
+    m_gameID = gameID;
+    return true;
 }
 
 bool ServerConnection::RequestToJoinGame(const std::string& gameOwner) const
@@ -267,7 +313,8 @@ bool ServerConnection::Disconnect()
 std::vector<PlayerInfo> ParsePlayerInfo(const void* data, size_t len)
 {
     std::vector<PlayerInfo> info;
-    std::string message((const char*)data, len);
+    auto asChar = (const char*)data;
+    std::string message(asChar, len);
     auto pos = message.find_first_of(':');
     auto numberOfPlayers = std::stoul(message.substr(0, pos++));
 
@@ -280,7 +327,7 @@ std::vector<PlayerInfo> ParsePlayerInfo(const void* data, size_t len)
         auto lengthOfUserData = std::stoul(message.substr(pos, next - pos));
         pos = ++next;
         next = pos + lengthOfUserData;
-        std::vector<char> data((char*)data + pos, (char*)data + next);
+        std::vector<char> data(asChar + pos, asChar + next);
         pos = next;
         info.push_back({ name,data });
     }

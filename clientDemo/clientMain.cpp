@@ -6,11 +6,17 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <thread>
 #include "Message.h"
-#include <conio.h>
+
 #include "ServerConnection.h"
 #include "P2PConnection.h"
 #include "Sender.h"
+
+#ifdef _WIN32
+#include <conio.h>
+#endif
+using namespace std::chrono_literals;
 
 template <typename T>
 inline void hash_combine(std::size_t& seed, const T& value)
@@ -188,7 +194,7 @@ int main(int argc, char** argv)
 
     std::string peerDetails;
     while (loop) {    
-        Sleep(1);
+        std::this_thread::sleep_for(1ms);
         serverConnection.Update(cbs);
         if (p2pClient)
         {
@@ -196,6 +202,7 @@ int main(int argc, char** argv)
         }
         // Some basic UI
             // send packet
+#ifdef _WIN32
             if (_kbhit()) {
                 auto c = _getch();
                 if (c == 'q')
@@ -303,7 +310,7 @@ int main(int argc, char** argv)
                 }
              
         }
-        
+#endif        
 
 
 
