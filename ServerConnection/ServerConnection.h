@@ -118,5 +118,4 @@ private:
     ServerConnectionState m_state;
     std::unique_ptr < GameStartInfo > m_startGameInfo = nullptr;
     std::function<void(const std::string&)> m_logger;
-    std::vector<uint32_t> m_localIPV4s;
 };

@@ -169,10 +169,11 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const{
 ServerConnection::ServerConnection(std::function<void(const std::string&)> logger) :
     m_state(ServerConnectionState::Idle),
     m_local(nullptr, [](ENetHost*) {}),
-    m_logger(logger),
-    m_localIPV4s(ReturnLocalIPv4())
-{
-    
+    m_logger(logger)
+{    
+    auto localIPv4s = ReturnLocalIPv4();
+    for (auto ip : localIPv4s)
+        m_localAddresses.push_back({ ip,0 });
 }
 
 ServerConnection::ServerConnection(
@@ -309,13 +310,13 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 m_state = ServerConnectionState::Connected;
                 // Send the details needed to the server
                 Message::Make(MessageType::Version, m_gameID).OnData(SendTo(m_server));
-              //  auto localIPs = ReturnLocalIPv4();
-                m_localAddresses.resize(m_localIPV4s.size());
+            
                 std::string ipMessage;
-                for (size_t i = 0; i < m_localIPV4s.size(); i++)
+                for (size_t i=0; i< m_localAddresses.size(); i++)
                 {
+                    auto ip = m_localAddresses[i].host;
                     enet_socket_get_address(m_local->socket, &m_localAddresses[i]);
-                    m_localAddresses[i].host = m_localIPV4s[i];
+                    m_localAddresses[i].host = ip;
                     if (i > 0)
                         ipMessage += ",";
                     ipMessage += ToString(m_localAddresses[i]);
