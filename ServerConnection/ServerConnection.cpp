@@ -60,7 +60,7 @@ ServerConnection::~ServerConnection()
 #ifdef _WIN32
 std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
 {
-    printf("Discocer local IPv4 addresses\n");
+    printf("Discover local IPv4 addresses\n");
     std::vector<uint32_t> addresses;
     IP_ADAPTER_ADDRESSES* adapter_addresses(NULL);
     IP_ADAPTER_ADDRESSES* adapter(NULL);

@@ -46,7 +46,7 @@ bool User::TrySetNameAndLogIn(const std::string& name, const std::string& userDa
     {
         msg += "\nyour local IPs are ";
         for(auto ip : m_localIPs)
-            msg += ToReadableString(ip) + "\n";
+            msg += ToReadableString(ip) + " ";
     }
     SendInfoMessage(msg);
     m_name = name;
