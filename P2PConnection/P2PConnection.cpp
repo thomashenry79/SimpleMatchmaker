@@ -65,7 +65,7 @@ void P2PConnection::TryStart()
    
      m_TryStart = true;
      m_logger("Initiating Start process: Send Start message, wait for commit, then disconnect\n");
-     Sleep(2000);
+
      Message::Make(MessageType::Info, "Start").OnData(SendTo(peerConnections[0]));
    
     

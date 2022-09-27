@@ -3,9 +3,12 @@
 #include "Utils.h"
 #include "Message.h"
 #include "Sender.h"
-#include <ws2tcpip.h>
 #include <algorithm>
-
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#include <IPTypes.h>
+#include <iphlpapi.h>
+#endif
 GameInfoStruct::GameInfoStruct(const std::string& msg)
 {
     auto parts = stringSplit(msg, ':');
@@ -54,9 +57,86 @@ ServerConnection::~ServerConnection()
 {
     Disconnect();    
 }
+#ifdef _WIN32
+std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
+{
+    std::vector<uint32_t> addresses;
+    IP_ADAPTER_ADDRESSES* adapter_addresses(NULL);
+    IP_ADAPTER_ADDRESSES* adapter(NULL);
 
+    DWORD adapter_addresses_buffer_size = 16 * 1024;
 
+    // Get adapter addresses
+    for (int attempts = 0; attempts != 3; ++attempts) {
+        adapter_addresses = (IP_ADAPTER_ADDRESSES*)malloc(adapter_addresses_buffer_size);
+
+        DWORD error = ::GetAdaptersAddresses(AF_UNSPEC,
+            GAA_FLAG_SKIP_ANYCAST |
+            GAA_FLAG_SKIP_MULTICAST |
+            GAA_FLAG_SKIP_DNS_SERVER |
+            GAA_FLAG_SKIP_FRIENDLY_NAME,
+            NULL,
+            adapter_addresses,
+            &adapter_addresses_buffer_size);
+
+        if (ERROR_SUCCESS == error) {
+            break;
+        }
+        else if (ERROR_BUFFER_OVERFLOW == error) {
+            // Try again with the new size
+            free(adapter_addresses);
+            adapter_addresses = NULL;
+            continue;
+        }
+        else {
+            // Unexpected error code - log and throw
+            free(adapter_addresses);
+            adapter_addresses = NULL;
+            return{};
+        }
+    }
+
+    // Iterate through all of the adapters
+    for (adapter = adapter_addresses; NULL != adapter; adapter = adapter->Next) {
+        // Skip loopback adapters
+        if (IF_TYPE_SOFTWARE_LOOPBACK == adapter->IfType) continue;
+
+        printf("[ADAPTER]: %S\n", adapter->Description);
+        printf("[NAME]:    %S\n", adapter->FriendlyName);
+
+        // Parse all IPv4 addresses
+        for (IP_ADAPTER_UNICAST_ADDRESS* address = adapter->FirstUnicastAddress; NULL != address; address = address->Next) {
+            auto family = address->Address.lpSockaddr->sa_family;
+            if (AF_INET == family) {
+                SOCKADDR_IN* ipv4 = reinterpret_cast<SOCKADDR_IN*>(address->Address.lpSockaddr);
+                char str_buffer[16] = { 0 };
+                inet_ntop(AF_INET, &(ipv4->sin_addr), str_buffer, 16);
+                auto num = ipv4->sin_addr.S_un.S_addr;
+                printf("[IP]:      %s,%d\n", str_buffer, num);
+
+                if (strncmp("169.254", str_buffer, strlen("169.254")) == 0)
+                {
+                    printf("ignore this one\n");
+                    continue;
+                }
+                if (strncmp("127.0.0.1", str_buffer, strlen("127.0.0.1")) == 0)
+                {
+                    printf("ignore this one\n");
+                    continue;
+                }
+                addresses.push_back(num);
+            }
+        }
+        printf("\n");
+    }
+
+    free(adapter_addresses);
+    adapter_addresses = NULL;
+    return addresses;
+}
+#else
 std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const{
+    ListIpAddresses();
     char host[256];
    // char* IP;
     struct hostent* host_entry;
@@ -83,13 +163,14 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const{
     // printf("Internal IP: %s\n", IP);
     return addresses;
 }
-
+#endif
 
 
 ServerConnection::ServerConnection(std::function<void(const std::string&)> logger) :
     m_state(ServerConnectionState::Idle),
     m_local(nullptr, [](ENetHost*) {}),
-    m_logger(logger)
+    m_logger(logger),
+    m_localIPV4s(ReturnLocalIPv4())
 {
     
 }
@@ -228,13 +309,13 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 m_state = ServerConnectionState::Connected;
                 // Send the details needed to the server
                 Message::Make(MessageType::Version, m_gameID).OnData(SendTo(m_server));
-                auto localIPs = ReturnLocalIPv4();
-                m_localAddresses.resize(localIPs.size());
+              //  auto localIPs = ReturnLocalIPv4();
+                m_localAddresses.resize(m_localIPV4s.size());
                 std::string ipMessage;
-                for (size_t i = 0; i < localIPs.size(); i++)
+                for (size_t i = 0; i < m_localIPV4s.size(); i++)
                 {
                     enet_socket_get_address(m_local->socket, &m_localAddresses[i]);
-                    m_localAddresses[i].host = localIPs[i];
+                    m_localAddresses[i].host = m_localIPV4s[i];
                     if (i > 0)
                         ipMessage += ",";
                     ipMessage += ToString(m_localAddresses[i]);

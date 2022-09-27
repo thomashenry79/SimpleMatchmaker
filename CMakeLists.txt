@@ -33,6 +33,5 @@ endif()
 
 if(WIN32)
   target_link_libraries(SimpleMatchmakerServer Winmm ws2_32)
-  target_link_libraries(Client Winmm ws2_32)
-  add_compile_definitions(_WINSOCK_DEPRECATED_NO_WARNINGS=1)
+  target_link_libraries(Client Winmm ws2_32 Iphlpapi)
 endif()
