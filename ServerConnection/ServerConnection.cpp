@@ -66,10 +66,11 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
     IP_ADAPTER_ADDRESSES* adapter(NULL);
 
     DWORD adapter_addresses_buffer_size = 16 * 1024;
-
+    std::vector<char> buffer;
     // Get adapter addresses
     for (int attempts = 0; attempts != 3; ++attempts) {
-        adapter_addresses = (IP_ADAPTER_ADDRESSES*)malloc(adapter_addresses_buffer_size);
+        buffer.resize(adapter_addresses_buffer_size);
+        adapter_addresses = (IP_ADAPTER_ADDRESSES*)buffer.data();
 
         DWORD error = ::GetAdaptersAddresses(AF_UNSPEC,
             GAA_FLAG_SKIP_ANYCAST |
@@ -85,14 +86,10 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
         }
         else if (ERROR_BUFFER_OVERFLOW == error) {
             // Try again with the new size
-            free(adapter_addresses);
-            adapter_addresses = NULL;
             continue;
         }
         else {
             // Unexpected error code - log and throw
-            free(adapter_addresses);
-            adapter_addresses = NULL;
             return{};
         }
     }
@@ -129,9 +126,6 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
             }
         }
     }
-
-    free(adapter_addresses);
-    adapter_addresses = NULL;
     return addresses;
 }
 #else
