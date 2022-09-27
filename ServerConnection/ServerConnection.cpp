@@ -89,7 +89,7 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
             continue;
         }
         else {
-            // Unexpected error code - log and throw
+            // Unexpected error code - return empty list
             return{};
         }
     }
@@ -180,6 +180,8 @@ ServerConnection::ServerConnection(
 
 bool ServerConnection::Connect(const std::string& serverIP, int serverPort, const std::string& userName,  const void* userData, size_t userDataLength, const std::string& gameID)
 { 
+    if (m_localAddresses.size() == 0)
+        return false;
     if (m_state != ServerConnectionState::Idle)
         return false;
   
