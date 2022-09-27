@@ -33,15 +33,19 @@ public:
     PingHandler();
     void Update(ENetPeer* peerToPing);
     void OnPong();
-    double GetPing() const { return m_pingEMA; }
+    double GetPing();
+    double PingHandler::GetPing() const;
 private:
-    // Exponential moving average, taken twice a second, over the last 8 seconds
+    // Exponential moving average, taken three a second, over the last 20 seconds
     double m_pingEMA = 0;
-    const int emaPeriodMS = 8 * 1000;
-    const int pingPeriodMS = 500;
-    const double EMA_Constant = 2 / (1.0 + (emaPeriodMS / pingPeriodMS));
+    double m_pingMean = 0;
+    const int emaPeriodMS = 20 * 1000;
+    const int pingPeriodMS = 333;
+    const int m_nSamples = emaPeriodMS / pingPeriodMS;
+    const double EMA_Constant = 2 / (1.0 + m_nSamples);
     unsigned int m_bPingSent =false;
     std::chrono::steady_clock::time_point lastPing;
+    std::vector<double> m_pings;
 };
 
 

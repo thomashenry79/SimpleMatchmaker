@@ -144,7 +144,12 @@ void P2PConnection::CleanRedundantConnections()
         Info();
     }
 }
-
+//#include <iostream>
+double PingHandler::GetPing() const 
+{ 
+   // std::cout << "EMA: " << m_pingEMA << ", mean: " << m_pingMean << "\n";
+    return m_pingEMA; 
+}
 
 PingHandler::PingHandler() : lastPing(steady_clock::now())
 {
@@ -172,15 +177,27 @@ void PingHandler::OnPong()
 {
     auto thisPing = (double)duration_cast<microseconds>(steady_clock::now() - lastPing).count();
     
-    //ignore silly big pings, these are probablt not representative
+    //if (m_pings.size() >= m_nSamples)
+    //{
+    //    std::cout << "now filled up\n";
+    //    std::rotate(m_pings.begin(), m_pings.begin() + 1, m_pings.end());
+    //    m_pings.back() = thisPing;
+    //}
+    //else
+    //    m_pings.push_back(thisPing);
+    //m_pingMean = 0;
+    //for (auto& n : m_pings)
+    //    m_pingMean += n;
+    //m_pingMean /= m_pings.size();
+
+    //ignore silly big pings, these are probably not representative
     if (thisPing > 2 *1e6)
         return;
 
     if (m_pingEMA == 0)
         m_pingEMA = thisPing;
-    
-    m_pingEMA = ((thisPing - m_pingEMA) * EMA_Constant) + m_pingEMA;
-   // std::cout << "last ping was " << thisPing << "us" << ", ping average: " << m_pingEMA <<"us\n";
+    else
+        m_pingEMA = (thisPing * EMA_Constant) + (m_pingEMA * (1 - EMA_Constant));
     
     m_bPingSent = false;
 }
