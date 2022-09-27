@@ -97,9 +97,8 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
     // Iterate through all of the adapters
     for (adapter = adapter_addresses; NULL != adapter; adapter = adapter->Next) {
         // Skip loopback adapters
-        if (IF_TYPE_SOFTWARE_LOOPBACK == adapter->IfType) continue;
-
-      
+        if (IF_TYPE_SOFTWARE_LOOPBACK == adapter->IfType)
+            continue;            
 
         // Parse all IPv4 addresses
         for (IP_ADAPTER_UNICAST_ADDRESS* address = adapter->FirstUnicastAddress; NULL != address; address = address->Next) {
@@ -108,11 +107,8 @@ std::vector<uint32_t> ServerConnection::ReturnLocalIPv4() const
                 SOCKADDR_IN* ipv4 = reinterpret_cast<SOCKADDR_IN*>(address->Address.lpSockaddr);
                 char str_buffer[16] = { 0 };
                 inet_ntop(AF_INET, &(ipv4->sin_addr), str_buffer, 16);
+                // These are unconnected adapters
                 if (strncmp("169.254", str_buffer, strlen("169.254")) == 0)
-                {
-                    continue;
-                }
-                if (strncmp("127.0.0.1", str_buffer, strlen("127.0.0.1")) == 0)
                 {
                     continue;
                 }
