@@ -41,6 +41,11 @@ bool contains(const std::vector<T>& v, const T& elem)
 	return std::find(v.begin(), v.end(), elem) != v.end();
 }
 
+template<class T, class C>
+bool contains(const std::vector<T>& v, const C& comp)
+{
+    return std::find_if(v.begin(), v.end(), comp) != v.end();
+}
 
 template<class C, class T>
 void eraseAndRemove(C& container, const T& elem)
@@ -51,6 +56,12 @@ template<class C, class T>
 void eraseAndRemoveIfNot(C& container, const T& elem)
 {
     container.erase(std::remove_if(std::begin(container), std::end(container), [&](const T& el) {return el != elem; }), std::end(container));
+}
+
+template<class C, class T>
+void eraseAndRemoveIfNotLamda(C& container, const T& comp)
+{
+    container.erase(std::remove_if(std::begin(container), std::end(container), comp), std::end(container));
 }
 bool TryParseIPAddress(const std::string& msg, ENetAddress& port);
 

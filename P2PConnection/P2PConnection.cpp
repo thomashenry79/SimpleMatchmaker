@@ -6,17 +6,30 @@
 using namespace std::chrono;
 P2PConnection::P2PConnection(GameStartInfo info, std::function<void(const std::string&)> logger) :
     m_info(info),
-    localAddress{ ENET_HOST_ANY,info.port },
-    local(enet_host_create(&localAddress, info.peerAddresses.size()*2, 0, 0, 0),
-        enet_host_destroy),
+    localAddress{ ENET_HOST_ANY,info.port},  
     m_logger(logger),
+    local(nullptr, enet_host_destroy),
     peerCandidateAddresses(m_info.peerAddresses)
 {
-    for(auto& address : m_info.peerAddresses)
+    peerCandidateAddresses = m_info.peerAddresses;
+
+    auto lastlocalPort = m_info.peerAddresses.back().port;
+    auto remoteAddr = m_info.peerAddresses.front();
+    if (remoteAddr.port != lastlocalPort)
+    {
+        logger("Remote external port different from remote local port, create duplicate IP address candidate with remote IP and local port - in case other player has inward port forwarding\n");
+        remoteAddr.port = lastlocalPort;
+        peerCandidateAddresses.push_back(remoteAddr);
+    }  
+
+    local = ENetHostPtr(enet_host_create(&localAddress, peerCandidateAddresses.size() * 2, 0, 0, 0),
+        enet_host_destroy);
+
+    for(auto& address : peerCandidateAddresses)
         outGoingPeerCandidates.push_back(enet_host_connect(local.get(), &address, 0, 0));
 
     logger("********Start P2P connection process with " + info.peerName + ". Try connections on: \n");
-    for (const auto& addr : m_info.peerAddresses)
+    for (const auto& addr : peerCandidateAddresses)
         logger(ToReadableString(addr) + "\n");
     logger("****************\n");
 }
@@ -241,10 +254,10 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
         {
             m_logger(std::string("connect event, ip: ") + ToReadableString(event.peer->address) + " id: " + std::to_string(event.peer->connectID) + "\n");
 
+            auto matchAddressOnly = [&](const ENetAddress& a)->bool { return a.host == event.peer->address.host; };
             // If the incoming connection is from the candidate list, accept it and clear the candidate list
-            if (contains(peerCandidateAddresses, event.peer->address))
+            if (contains(peerCandidateAddresses, matchAddressOnly))
             {
-                eraseAndRemoveIfNot(peerCandidateAddresses, event.peer->address);
                 m_logger("Connected to a Peer \n");
 
                 peerConnections.push_back(event.peer);
@@ -276,12 +289,16 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
             else
             {
                 if (contains(m_info.peerAddresses, event.peer->address))
-                {
+                { 
                     m_logger(std::string("Incoming connection was from a potential candidate that we no longer want to use: ") + ToReadableString(event.peer->address) + " bin it\n");
+                     enet_peer_reset(event.peer);           
+                  
                 }
                 else
+                {
                     m_logger(std::string("Incoming connection from unexpected peer: ") + ToReadableString(event.peer->address) + " bin it\n");
-                enet_peer_reset(event.peer);
+                    enet_peer_reset(event.peer);
+                }
             }
             Info();
             break;

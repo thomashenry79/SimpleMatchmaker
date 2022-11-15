@@ -239,12 +239,18 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
 
     if (m_userName.length() == 0)
         return false;
-
-    m_local = ENetHostPtr(enet_host_create(nullptr, 1, 0, 0, 0), enet_host_destroy);  
+    std::vector<uint16_t> ports{ 19610,19611,19612,19613,19614 };
+    m_local = nullptr;
+    for (auto port : ports) {
+        ENetAddress localAddress{ ENET_HOST_ANY,port };
+        m_local = ENetHostPtr(enet_host_create(&localAddress, 1, 0, 0, 0), enet_host_destroy);
+        if (m_local)
+            break;
+    }
     if (!m_local)
         return false;
  
-
+   
     enet_address_set_host_ip(&m_serverAddress, serverIP.c_str());
     m_serverAddress.port = serverPort;
     m_server = enet_host_connect(m_local.get(), &m_serverAddress, 0, 0);
