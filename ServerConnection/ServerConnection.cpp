@@ -239,7 +239,8 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
 
     if (m_userName.length() == 0)
         return false;
-    std::vector<uint16_t> ports{ 19610,19611,19612,19613,19614 };
+   // std::vector<uint16_t> ports{ 19610,19611,19612,19613,19614 };
+    std::vector<uint16_t> ports{ 6000,6001,6002,6003,6004,6005,6006,6007,6008,6009 };
     m_local = nullptr;
     for (auto port : ports) {
         ENetAddress localAddress{ ENET_HOST_ANY,port };
