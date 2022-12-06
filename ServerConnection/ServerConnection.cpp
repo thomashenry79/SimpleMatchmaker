@@ -243,13 +243,41 @@ bool ServerConnection::Connect(const std::string& serverIP, int serverPort, cons
     std::vector<uint16_t> ports{ 6000,6001,6002,6003,6004,6005,6006,6007,6008,6009 };
     m_local = nullptr;
     for (auto port : ports) {
-        ENetAddress localAddress{ ENET_HOST_ANY,port };
-        m_local = ENetHostPtr(enet_host_create(&localAddress, 1, 0, 0, 0), enet_host_destroy);
+        ENetAddress localAddress{ ENET_HOST_ANY,7000 };
+        m_local = ENetHostPtr(enet_host_create(nullptr/*&localAddress*/, 1, 0, 0, 0), enet_host_destroy);
         if (m_local)
             break;
     }
     if (!m_local)
         return false;
+
+ 
+    //{
+    //    ENetAddress ip;
+    //    if (IPConnection(*m_local, serverIP, 19610).DoConnection(ip))
+    //    {
+    //        m_logger(std::string("Address from first IP Server port 1: ") + ToReadableString(ip) + "\n");
+    //        m_publicAddresses.push_back(ip);
+    //    }
+
+    //    if (IPConnection(*m_local, serverIP, 19620).DoConnection(ip)) 
+    //    {
+    //        m_logger(std::string("Address from first IP Server port 2: ") + ToReadableString(ip) + "\n");
+    //        m_publicAddresses.push_back(ip);
+    //    }
+
+    //    if (IPConnection(*m_local, "87.106.237.227", 19610).DoConnection(ip))
+    //    {
+    //        m_logger(std::string("Address from second IP Server port 1: ") + ToReadableString(ip) + "\n");
+    //        m_publicAddresses.push_back(ip);
+    //    }
+    //    if (IPConnection(*m_local, "87.106.237.227", 19620).DoConnection(ip))
+    //    {
+    //        m_logger(std::string("Address from second IP Server port 2: ") + ToReadableString(ip) + "\n");
+    //        m_publicAddresses.push_back(ip);
+    //    }
+
+    //}
  
    
     enet_address_set_host_ip(&m_serverAddress, serverIP.c_str());
@@ -358,14 +386,21 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
                 Message::Make(MessageType::Version, m_gameID).OnData(SendTo(m_server));
             
                 std::string ipMessage;
-                for (size_t i=0; i< m_localAddresses.size(); i++)
+
+                for (size_t i = 0; i < m_localAddresses.size(); i++)
                 {
                     auto ip = m_localAddresses[i].host;
                     enet_socket_get_address(m_local->socket, &m_localAddresses[i]);
                     m_localAddresses[i].host = ip;
+                }
+
+                auto ipAddressesToReport = m_publicAddresses;
+                ipAddressesToReport.insert(ipAddressesToReport.end(), m_localAddresses.begin(), m_localAddresses.end());
+                for (size_t i=0; i< ipAddressesToReport.size(); i++)
+                {
                     if (i > 0)
                         ipMessage += ",";
-                    ipMessage += ToString(m_localAddresses[i]);
+                    ipMessage += ToString(ipAddressesToReport[i]);
                 }
               
                 Message::Make(MessageType::Info, ipMessage).OnData(SendTo(m_server));
@@ -525,3 +560,51 @@ std::string GameStartInfo::ToString() const
     returnString += "\n";
     return returnString;
 }
+
+
+
+bool IPConnection::DoConnection(ENetAddress& result)
+{
+    if (m_serverIP.size() == 0)
+        return false;
+   
+    ENetAddress serverAddress;
+    enet_address_set_host_ip(&serverAddress, m_serverIP.c_str());
+    serverAddress.port = m_serverPort;
+    auto server = enet_host_connect(&m_local, &serverAddress, 0, 0);
+
+    bool success = false;
+    while (true) {
+        ENetEvent event;
+        Sleep(1);
+        while (enet_host_service(&m_local, &event, 0) > 0)
+        {
+            switch (event.type) {
+            case ENET_EVENT_TYPE_CONNECT:
+            {
+                break;
+            }
+            case ENET_EVENT_TYPE_RECEIVE:
+            { 
+                EnetPacketRAIIGuard guard(event.packet);
+                auto msg = Message::Parse(event.packet->data, event.packet->dataLength);
+                if (msg.Type() == MessageType::Info)
+                    success = TryParseIPAddress(msg.Content(), result);
+                enet_peer_disconnect(server,0);
+                enet_host_flush(&m_local);
+                enet_peer_reset(server);
+                return success;
+                break;
+            }
+            case ENET_EVENT_TYPE_DISCONNECT:
+            {
+                return success;
+                break;
+            }
+            case ENET_EVENT_TYPE_NONE:
+                break;
+            }
+        }
+    }
+    return success;
+ }

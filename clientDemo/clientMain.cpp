@@ -60,19 +60,19 @@ int main(int argc, char** argv)
    int port = 19602;// std::stoi(argv[3]);
 
    // Some randome buffer representnig userdata - this can be whatever you want in swos
-   auto userBlob = RandomBuffer(100);
+  // auto userBlob = RandomBuffer(100);
    // take hash of blob to check that the buffer is correctly received and passed on by the server
-   auto blobHash = hash_range(userBlob.begin(), userBlob.end());
+  // auto blobHash = hash_range(userBlob.begin(), userBlob.end());
 
    
     // init
     // -- enet
    
 
-    std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << " user data size:" << userBlob.size() <<", hash:" << blobHash%10000 <<"\n";
+    std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << " user data size:" /*<< userBlob.size() <<", hash:" << blobHash%10000*/ <<"\n";
     EnetInitialiser enetInitGuard;
     auto logger = [](const std::string& s) {std::cout << s; };
-    ServerConnection serverConnection(serverIP, port, name, userBlob.data(),userBlob.size(),"SimpleTestApp",logger);
+    ServerConnection serverConnection(serverIP, port, name,nullptr,0,"SimpleTestApp",logger);
     std::unique_ptr<P2PConnection> p2pClient(nullptr);
       
 
@@ -267,7 +267,7 @@ int main(int argc, char** argv)
                     else if (c == 'c')
                     {
                       //  std::cout << "pressed connect\n";
-                        if(serverConnection.Connect(serverIP, port, name, userBlob.data(),userBlob.size(),"SimpleTestApp"))
+                        if(serverConnection.Connect(serverIP, port, name, nullptr,0,"SimpleTestApp"))
                             std::cout << "Attempt connection to " << serverIP << ":" << port << ", with name " << name << "\n";
 
                     }

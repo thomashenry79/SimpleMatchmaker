@@ -76,6 +76,16 @@ struct ServerCallbacks
 
 };
 
+class IPConnection
+{
+public:
+    IPConnection(ENetHost& local, const std::string& serverIP, uint16_t serverPort) : m_local(local), m_serverIP(serverIP), m_serverPort(serverPort) {}
+    bool DoConnection(ENetAddress& result);
+private:
+    ENetHost& m_local;
+    const std::string& m_serverIP;
+    uint16_t m_serverPort;
+};
 
 enum class ServerConnectionState;
 class ServerConnection
@@ -107,6 +117,7 @@ public:
    // bool IsConnected() const;
 
 private:
+    std::vector<ENetAddress> m_publicAddresses;
     std::vector<ENetAddress> m_localAddresses;
     ENetHostPtr m_local;
     ENetAddress m_serverAddress{ 0,0 };

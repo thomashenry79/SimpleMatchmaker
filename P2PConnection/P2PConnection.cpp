@@ -15,12 +15,7 @@ P2PConnection::P2PConnection(GameStartInfo info, std::function<void(const std::s
 
     auto lastlocalPort = m_info.peerAddresses.back().port;
     auto remoteAddr = m_info.peerAddresses.front();
-    if (remoteAddr.port != lastlocalPort)
-    {
-        logger("Remote external port different from remote local port, create duplicate IP address candidate with remote IP and local port - in case other player has inward port forwarding\n");
-        remoteAddr.port = lastlocalPort;
-        peerCandidateAddresses.push_back(remoteAddr);
-    }  
+
 
     local = ENetHostPtr(enet_host_create(&localAddress, peerCandidateAddresses.size() * 2, 0, 0, 0),
         enet_host_destroy);
