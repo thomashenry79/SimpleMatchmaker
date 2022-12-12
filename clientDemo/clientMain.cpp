@@ -49,14 +49,14 @@ int main(int argc, char** argv)
 {
     srand((unsigned int)time(NULL));
     //// general setting
-    if (argc < 2) {
+    if (argc < 3) {
          printf("invalid command line parameters\n");
-         printf("usage: Client <name>\n");
+         printf("usage: Client <name> <server IP>\n");
          return 0;
      }
     // set ip address and port    
    std::string name(argv[1]);
-   std::string serverIP(argc >2 ? argv[2] : "77.68.32.246");
+   std::string serverIP(argv[2]);
    int port = 19602;// std::stoi(argv[3]);
 
    // Some randome buffer representnig userdata - this can be whatever you want in swos
