@@ -38,7 +38,7 @@ std::vector<char> RandomBuffer(int maxSize)
 {
     int bufferSize = rand() % maxSize;
     std::vector<char> buffer(bufferSize);
-    buffer[0] = 0;
+  //  buffer[0] = 0;
     for (size_t i = 1; i < bufferSize; i++)
         buffer[i] = rand() % 256;
     return buffer;
@@ -49,15 +49,15 @@ int main(int argc, char** argv)
 {
     srand((unsigned int)time(NULL));
     //// general setting
-    if (argc < 3) {
+    if (argc < 4) {
          printf("invalid command line parameters\n");
-         printf("usage: Client <name> <server IP>\n");
+         printf("usage: Client <name> <server IP> <port>\n");
          return 0;
      }
     // set ip address and port    
    std::string name(argv[1]);
    std::string serverIP(argv[2]);
-   int port = 19602;// std::stoi(argv[3]);
+   int port = std::stoi(argv[3]);
 
    // Some randome buffer representnig userdata - this can be whatever you want in swos
   // auto userBlob = RandomBuffer(100);
@@ -283,10 +283,13 @@ int main(int argc, char** argv)
                     }
                     else if (c == 'g')
                     {
-                        auto buffer = RandomBuffer(23);                     
+                        auto buffer = RandomBuffer(23);
+                      //  buffer.clear();
                         std::string msg((const char*)buffer.data(), buffer.size());
+                      
                         std::cout << "pressed create with game info: " + msg + "\n";
                         serverConnection.CreateGame(buffer.data(),(uint8_t)buffer.size());
+                       // serverConnection.CreateGame(nullptr,0);
                     }
                     else if (c == 'l')
                     {

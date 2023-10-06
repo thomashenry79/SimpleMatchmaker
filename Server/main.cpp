@@ -15,7 +15,14 @@
 int main(int argc, char** argv)
 {
     EnetInitialiser enetObj;
-    int port = 19602;
+    if (argc < 2) {
+        printf("invalid command line parameters\n");
+        printf("usage: SimpleMatchmakerServer <port>\n");
+        return 0;
+    }
+    // set ip address and port    
+ //   std::string port(argv[1]);
+    int port = std::stoi(argv[1]);
     Connections connections(port);
     // loop
     bool loop = true; 
