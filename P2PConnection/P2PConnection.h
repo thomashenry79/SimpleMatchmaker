@@ -33,8 +33,7 @@ public:
     PingHandler();
     void Update(ENetPeer* peerToPing);
     void OnPong();
-    double GetPing();
-    double PingHandler::GetPing() const;
+    double GetPing() const;
 private:
     // Exponential moving average, taken three a second, over the last 20 seconds
     double m_pingEMA = 0;

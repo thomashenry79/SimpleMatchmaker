@@ -4,7 +4,8 @@
 #include "Message.h"
 #include "Sender.h"
 #include <algorithm>
-
+#include <thread>
+#include <chrono>
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #include <IPTypes.h>
@@ -581,7 +582,7 @@ bool IPConnection::DoConnection(ENetAddress& result)
     bool success = false;
     while (true) {
         ENetEvent event;
-        Sleep(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));// Sleep(1);
         while (enet_host_service(&m_local, &event, 0) > 0)
         {
             switch (event.type) {
