@@ -90,13 +90,20 @@ bool User::CreateGame(const std::string& data)
 {
     try
     {
+        auto len = data.size(); len;
         auto s = stringSplit(data,',');
-        if (s.size() != 2)
+        if (s.size() < 2)
             throw std::exception();
         int min_players = std::stoi(s[0]);
         int max_players = std::stoi(s[1]);
         
-        if (m_connections->OpenGame(this, min_players, max_players))
+        size_t dataOffset = s[0].size() + s[1].size() + 2;
+        std::vector<char> gameData;
+        if(s.size()>2 && dataOffset < data.size())
+        { 
+            gameData.assign(data.begin() + dataOffset, data.end());
+        }
+        if (m_connections->OpenGame(this, min_players, max_players, gameData))
         {
             Message::Make(MessageType::Create,Name()).OnData(SendTo(Peer()));
             m_connections->BroadcastMessage(Message::Make(MessageType::Info, "New Game created"));
@@ -107,7 +114,7 @@ bool User::CreateGame(const std::string& data)
     }
     catch (...)
     {
-        DisconnectUser("Create game message should be format: <CREATE:M,N> M-min num playes, N-max numplayers");
+        DisconnectUser("Create game message should be format: <CREATE:M,N,data> M-min num playes, N-max numplayers");
         return false;
     }
 }

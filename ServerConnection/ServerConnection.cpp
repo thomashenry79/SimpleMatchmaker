@@ -292,10 +292,15 @@ bool ServerConnection::LeaveGame() const
     return true;
 }
 
-bool ServerConnection::CreateGame() const
+bool ServerConnection::CreateGame(const void* gameInfoBuffer, uint8_t bufferSize) const
 {
     if (m_server)
-        Message::Make(MessageType::Create, "2,2").OnData(SendTo(m_server));
+    {
+        std::string buffer((const char*)gameInfoBuffer, (const char*)gameInfoBuffer + bufferSize);
+        auto message = std::string("2,2,") + std::string((const char*)gameInfoBuffer, bufferSize);
+        Message::Make(MessageType::Create, message).OnData(SendTo(m_server));
+    
+    }
     return true;
 }
 
@@ -317,6 +322,8 @@ bool ServerConnection::Disconnect()
 
     return true;
 }
+#include <iostream>
+
 std::vector<PlayerInfo> ParsePlayerInfo(const void* data, size_t len)
 {
     std::vector<PlayerInfo> info;
@@ -339,6 +346,30 @@ std::vector<PlayerInfo> ParsePlayerInfo(const void* data, size_t len)
         info.push_back({ name,data });
     }
     return info;
+}
+std::vector<OpenGameInfo> ParseOpenGames(const void* data, size_t len)
+{
+    std::vector<OpenGameInfo> games;
+    auto asChar = (const char*)data;
+    std::string message(asChar, len);
+    auto pos = message.find_first_of(':');
+
+    if (pos == std::string::npos)
+    {
+        std::cout << "old format for open games\n";
+        //// old format message with no open game info
+        auto names = stringSplit(message, ',');
+        for (auto& name : names)
+            games.push_back({ name,{} });
+        return games;
+    }
+    else
+    {
+        std::cout << "new format for open games\n";
+        games = ParsePlayerInfo(data, len);
+    }
+    //auto numberOfGames = std::stoul(message.substr(0, pos++));
+    return games;
 }
 void ServerConnection::Update(ServerCallbacks& callbacks)
 {
@@ -420,8 +451,10 @@ void ServerConnection::Update(ServerCallbacks& callbacks)
             
             if (msg.Type() == MessageType::GamesOpen)
             {
-                auto games = stringSplit(msg.Content(), ',');
-                callbacks.OpenGames(games);
+                msg.OnPayload([&](const void* data, size_t len) {
+                    auto openGames = ParseOpenGames(data, len);
+                    callbacks.OpenGames(openGames);
+                    });             
             }
             
             if(msg.Type() == MessageType::GameInfo)

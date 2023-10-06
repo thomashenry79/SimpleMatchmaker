@@ -79,7 +79,7 @@ int main(int argc, char** argv)
     // loop
     bool loop = true;
 
-    std::vector<std::string> openGames;
+    std::vector<OpenGameInfo> openGames;
     std::vector<std::string> requestedJoiners;
     std::vector<std::string> joined;
     
@@ -113,18 +113,23 @@ int main(int argc, char** argv)
     };
     cbs.ServerMessage = [](const std::string& msg) {std::cout << "Server Message: " << msg << "\n"; };
 
-    cbs.OpenGames = [&](const std::vector<std::string>& games)
+    cbs.OpenGames = [&](const std::vector<OpenGameInfo>& games)
     {
         openGames = games;
         std::cout << "Open Games: ";
-        bool isHosting = std::find(RANGE(games), name) != games.end();
+        bool isHosting = false;
         int i = 1;
         for (const auto& u : openGames)
         {
-            std::cout << i << ":" << u;
-            if (u == name)
+            std::cout << i << ":" << u.name;
+            if (u.name == name)
+            {
                 std::cout << "[You]";
-            std::cout << ", ";
+                isHosting = true;
+            }
+            std::string msg(u.data.begin(),u.data.end());
+            std::cout << " data: " + msg+ ", ";
+            i++;
         }
         if (openGames.size() == 0)
         {
@@ -247,21 +252,21 @@ int main(int argc, char** argv)
                     {
                        // std::cout << "pressed join game 1\n";
                         if (openGames.size() > 0)
-                            serverConnection.RequestToJoinGame(openGames[0]);
+                            serverConnection.RequestToJoinGame(openGames[0].name);
 
                     }
                     if (c == '2')
                     {
                        // std::cout << "pressed join game 2\n";
                         if (openGames.size() > 1)
-                            serverConnection.RequestToJoinGame(openGames[1]);
+                            serverConnection.RequestToJoinGame(openGames[1].name);
 
                     }
                     if (c == '3')
                     {
                       //  std::cout << "pressed join game 3\n";
                         if (openGames.size() > 2)
-                            serverConnection.RequestToJoinGame(openGames[2]);
+                            serverConnection.RequestToJoinGame(openGames[2].name);
 
                     }
                     else if (c == 'c')
@@ -278,8 +283,10 @@ int main(int argc, char** argv)
                     }
                     else if (c == 'g')
                     {
-                      //  std::cout << "pressed create\n";
-                        serverConnection.CreateGame();
+                        auto buffer = RandomBuffer(23);                     
+                        std::string msg((const char*)buffer.data(), buffer.size());
+                        std::cout << "pressed create with game info: " + msg + "\n";
+                        serverConnection.CreateGame(buffer.data(),(uint8_t)buffer.size());
                     }
                     else if (c == 'l')
                     {

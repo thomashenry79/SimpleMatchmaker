@@ -317,13 +317,13 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
             }
             else if (msg.Type() == MessageType::Info)
             {
-                if (strcmp(msg.Content(), "Ping") != 0 && strcmp(msg.Content(), "Pong"))
+                if (strcmp(msg.Content().c_str(), "Ping") != 0 && strcmp(msg.Content().c_str(), "Pong"))
                 {
                     m_logger("We received a message: ");
                     msg.ToConsole();
                 }
 
-                if (!strcmp(msg.Content(), "PRIMARY"))
+                if (!strcmp(msg.Content().c_str(), "PRIMARY"))
                 {
                     m_bPrimaryConnectionEstablished = true;
                     if (peerConnections.size() && (peerConnections[0] == event.peer))
@@ -344,15 +344,15 @@ void P2PConnection::Update(P2PCallbacks& callbacks)
                     m_PrimaryConnection = peerConnections[0]->address;
                     callbacks.Connected();
                 }
-                if (!strcmp(msg.Content(), "Ping"))
+                if (!strcmp(msg.Content().c_str(), "Ping"))
                     Message::Make(MessageType::Info, "Pong").OnData(SendTo(event.peer));
 
-                if (!strcmp(msg.Content(), "Pong"))
+                if (!strcmp(msg.Content().c_str(), "Pong"))
                 {
                     if(CanSend())
                         m_pingHandler.OnPong();
                 }
-                if (!strcmp(msg.Content(), "Start"))
+                if (!strcmp(msg.Content().c_str(), "Start"))
                 {
                     // If we are player 1, this is a response from player 2 saying that they are committed to the start - so are we!
                     // Let's begin the disconnection process

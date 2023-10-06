@@ -27,7 +27,7 @@ void Message::OnData(std::function<void(const std::string&)> callback) const
 }
 void Message::OnPayload(std::function<void(const void*, size_t)> callback) const
 {
-    callback((const void*)Content(), m_data.size() - headers.at(m_type).length());
+    callback((const void*)Content().data(), m_data.size() - headers.at(m_type).length());
 }
 Message Message::Make(MessageType type, std::string content)
 {
@@ -54,9 +54,9 @@ Message Message::Make(MessageType type, std::string content)
 MessageType Message::Type() const {
     return m_type;
 }
-const char* Message::Content() const
+std::string Message::Content() const
 {
-    return m_data.c_str() + headers.at(m_type).length();
+    return std::string(m_data.begin() + headers.at(m_type).length(),m_data.end());
 }
 //
 //bool Message::TryParseIPAddress(uint32_t& addr, uint16_t& port) const

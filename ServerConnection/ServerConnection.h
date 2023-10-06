@@ -20,6 +20,7 @@ struct GameStartInfo
     std::string ToString() const;
 };
 
+
 struct GameInfoStruct
 {
     GameInfoStruct(const std::string& msg);
@@ -34,6 +35,7 @@ struct PlayerInfo
     std::string name;
     std::vector<char> data;
 };
+using OpenGameInfo = PlayerInfo;
 struct ServerCallbacks
 {
     std::function<void()> Timeout;
@@ -53,7 +55,7 @@ struct ServerCallbacks
     std::function<void(const std::vector<PlayerInfo>&)> UserList;
 
     // A list of current open games. Every time this change, this event is called
-    std::function<void(const std::vector<std::string>&)> OpenGames;
+    std::function<void(const std::vector<OpenGameInfo>&)> OpenGames;
 
     // Information about the current game you are involved in, either as host or joiner
     // Who hosted the game, who has joined, and who is pending
@@ -110,7 +112,7 @@ public:
     bool Disconnect();
     bool RequestToJoinGame(const std::string& gameOwner) const;
     bool LeaveGame() const;
-    bool CreateGame() const;
+    bool CreateGame(const void* gameInfoBuffer, uint8_t bufferSize) const;
     bool StartGame() const;
     bool ApproveJoinRequest(const std::string& player);
     bool EjectPlayer(const std::string& player);

@@ -7,7 +7,7 @@ class User;
 class Game
 {
 public:
-	Game(User* creator, int minPlayers, int maxPlayers) : m_creator(creator), m_minPlayers(minPlayers),m_maxPlayers(maxPlayers) {};
+	Game(User* creator, int minPlayers, int maxPlayers,const std::vector<char>& data) : m_creator(creator), m_minPlayers(minPlayers),m_maxPlayers(maxPlayers),m_data(data) {};
 	void KillGame();
 	bool WasCreatedBy(const std::string& name) const;
 	 User* CreatedBy() const { return m_creator; }
@@ -19,6 +19,7 @@ public:
 	bool CanStart() const;
 	std::string ShortInfo() const;
 	User* FirstJoiner() { return *m_joined.begin(); }
+	const std::vector<char>& Data() const { return m_data; }
 private:
 	std::string FullInfo() const;
 	User* m_creator;
@@ -26,4 +27,5 @@ private:
 	std::set< User*> m_pending;
 	int m_maxPlayers;
 	int m_minPlayers;
+	std::vector<char> m_data;
 };

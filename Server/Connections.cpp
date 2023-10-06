@@ -164,19 +164,23 @@ void Connections::BroadcastActiveUsers() const
 }
 void Connections::BroadcastOpenGames() const
 {
-    std::string gamelist;
+    /*std::string gamelist;
     for (const auto& g : m_games)
-        gamelist += g.ShortInfo() + ",";
+        gamelist += g.ShortInfo() + ",";*/
 
+    std::string gamelist;
+    gamelist += std::to_string(m_games.size()) + ":";
+    for (const auto& u : m_games)
+        gamelist += u.ShortInfo() + ":" + std::to_string(u.Data().size()) + ":" + std::string(u.Data().begin(),u.Data().end());
     BroadcastMessage(Message::Make(MessageType::GamesOpen, gamelist));
 }
 void Connections::Update()
 {
    
 }
-bool Connections::OpenGame(User* creator, int min_players, int max_players)
+bool Connections::OpenGame(User* creator, int min_players, int max_players,const std::vector<char>& data)
 {
-    m_games.push_back(Game(creator, min_players, max_players));
+    m_games.push_back(Game(creator, min_players, max_players,data));
     return true;
 }
 
