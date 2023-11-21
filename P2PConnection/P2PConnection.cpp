@@ -183,6 +183,7 @@ void PingHandler::Update(ENetPeer* peerToPing)
 //#include <iostream>
 void PingHandler::OnPong()
 {
+    m_bPingSent = false;
     auto thisPing = (double)duration_cast<microseconds>(steady_clock::now() - lastPing).count();
     
     //if (m_pings.size() >= m_nSamples)
@@ -199,7 +200,7 @@ void PingHandler::OnPong()
     //m_pingMean /= m_pings.size();
 
     //ignore silly big pings, these are probably not representative
-    if (thisPing > 2 *1e6)
+    if (thisPing > 1 * 1e6)
         return;
 
     if (m_pingEMA == 0)
@@ -207,7 +208,7 @@ void PingHandler::OnPong()
     else
         m_pingEMA = (thisPing * EMA_Constant) + (m_pingEMA * (1 - EMA_Constant));
     
-    m_bPingSent = false;
+    
 }
 
 double P2PConnection::GetPing() const 

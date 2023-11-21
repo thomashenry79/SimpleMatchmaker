@@ -38,8 +38,8 @@ private:
     // Exponential moving average, taken three a second, over the last 20 seconds
     double m_pingEMA = 0;
     double m_pingMean = 0;
-    const int emaPeriodMS = 20 * 1000;
-    const int pingPeriodMS = 333;
+    const int emaPeriodMS = 10 * 1000;
+    const int pingPeriodMS = 250;
     const int m_nSamples = emaPeriodMS / pingPeriodMS;
     const double EMA_Constant = 2 / (1.0 + m_nSamples);
     unsigned int m_bPingSent =false;
